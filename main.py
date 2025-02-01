@@ -2,7 +2,6 @@ from flask import Flask, jsonify
 import dawlish_final_digital_twin_script_upgraded as ddt
 import penzance_final_digital_twin_script_upgraded as pdt
 import pandas as pd
-from datetime import datetime
 
 SPLASH_DT_Dawlish_models_folder = './other_assets/data_inputs/models/dawlish'
 SPLASH_DT_Penzance_models_folder = './other_assets/data_inputs/models/penzance'
