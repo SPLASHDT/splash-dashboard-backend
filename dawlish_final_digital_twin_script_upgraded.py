@@ -42,32 +42,33 @@ from datetime import datetime
 import seaborn as sns
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
+import os 
+import utils
 
 # Connect to google drive, as this was origionally done on google colab
 # drive.mount('/content/drive')
 
-
-
+utils.loadConfigFile()
 
 # Step 2: Extract data from our files
 
 # this is our 3 main folder file paths: wave, wind and wl (water level), we must extract data and concatenate from this these path folders.
 # Met_office_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
-Met_office_wave_folder = './other_assets/data_inputs/wave_level/Jan25/'
+Met_office_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
 # Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
-Met_office_wind_folder = './other_assets/data_inputs/wind/Jan25/'
+Met_office_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER")
 # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
-wl_file = './other_assets/data_inputs/water_level/Jan25/EXMOUTH Jan 22 to Dec 26.txt'
-state_file = 'last_processed_block.txt' # reminds the code to process each block sequentially.
+wl_file = os.environ.get("WATER_LEVEL_FILE") 
+state_file =  os.environ.get("STATE_FILE") # reminds the code to process each block sequentially.
 
 # We extract the data from these coordinates, this is the Dawlish wave buoy coordinates.
-Dawlish_Wave_Buoy_LATITUDE = 50.56757
-Dawlish_Wave_Buoy_LONGITUDE = -3.42424
+Dawlish_Wave_Buoy_LATITUDE =  float(os.environ.get("DAWLISH_WAVE_BUOY_LATITUDE"))
+Dawlish_Wave_Buoy_LONGITUDE = float(os.environ.get("DAWLISH_WAVE_BUOY_LONGITUDE"))
 
 # Step 4: Now we load our SPLASH models
 
 # SPLASH_DIGITAL_TWIN_models_folder = '/content/drive/MyDrive/splash/data_inputs/models/dawlish' # Locate to the Dawlish forlder, this is the same for Penzance but just for the Penzance folder.
-SPLASH_DIGITAL_TWIN_models_folder = './other_assets/data_inputs/models/dawlish' # Locate to the Dawlish forlder, this is the same for Penzance but just for the Penzance folder.
+SPLASH_DIGITAL_TWIN_models_folder = os.environ.get("DAWLISH_MODELS_FOLDER") # Locate to the Dawlish forlder, this is the same for Penzance but just for the Penzance folder.
 
 machine_learning_models = {
     'RF1': {},
@@ -555,7 +556,7 @@ def save_penazance_combined_features_plot_with_overtopping(df, overtopping_times
 
 def save_combined_features(final_DawlishTwin_dataset):
     # use_this_output_path_dawlish = '/content/drive/MyDrive/splash/data_outputs/dawlish/all_plots/dawlish_combined_features.png'
-    use_this_output_path_dawlish = './other_assets/data_outputs/dawlish/all_plots/dawlish_combined_features.png'
+    use_this_output_path_dawlish = os.environ.get("OUTPUT_PATH_DAWLISH")
     overtopping_times_dawlish = final_DawlishTwin_dataset[final_DawlishTwin_dataset['RF1_Final_Predictions'] == 1]['time']
     block_start_date = final_DawlishTwin_dataset['time'].min()
     block_end_date = final_DawlishTwin_dataset['time'].max()
@@ -575,11 +576,11 @@ def adjust_arrow_density(latitudes, longitudes, density_factor=12):
 def plot_significant_wave_height():
     # Step 11: Plot Hs geospatially and save to the figures folder
     # send_here_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
-    send_here_wave_folder = './other_assets/data_inputs/wave_level/Jan25'
+    send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
     # output_folder = '/content/drive/MyDrive/splash/data_outputs/dawlish/waves'
-    output_folder = './other_assets/data_outputs/dawlish/waves'
+    output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
     # state_file = '/content/drive/MyDrive/last_processed_block.txt'
-    state_file = './other_assets/last_processed_block.txt'
+    state_file = os.environ.get("STATE_FILE_FOLDER")
 
     current_block_Met_office_final = datetime.now().strftime('%Y%m%d')
     print(f"Processing Block: {current_block_Met_office_final}")

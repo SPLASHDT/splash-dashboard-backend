@@ -2,13 +2,18 @@ from flask import Flask, jsonify
 import dawlish_final_digital_twin_script_upgraded as ddt
 import penzance_final_digital_twin_script_upgraded as pdt
 import pandas as pd
+import os
+import utils
 
-SPLASH_DT_Dawlish_models_folder = './other_assets/data_inputs/models/dawlish'
-SPLASH_DT_Penzance_models_folder = './other_assets/data_inputs/models/penzance'
-dawlish_lat_seawall = 50.56757
-dawlish_lon_seawall = -3.42424
-penzance_lat_seawall = 50.1186
-penzance_lon_seawall = -5.5373
+
+utils.loadConfigFile()
+
+SPLASH_DT_Dawlish_models_folder = os.environ.get("DAWLISH_MODELS_FOLDER")
+SPLASH_DT_Penzance_models_folder = os.environ.get("PENZANCE_MODELS_FOLDER")
+dawlish_lat_seawall = os.environ.get("DAWLISH_LAT_SEAWALL")
+dawlish_lon_seawall = os.environ.get("DAWLISH_LON_SEAWALL")
+penzance_lat_seawall = os.environ.get("PENZANCE_LAT_SEAWALL")
+penzance_lon_seawall = os.environ.get("PENZANCE_LON_SEAWALL")
 
 app = Flask(__name__)
 
@@ -82,4 +87,4 @@ def get_penzance_wave_overtopping():
 
 
 if __name__ == '__main__':
-  app.run(debug=True, port=8000)
+  app.run(debug=bool(os.environ.get("DEBUG")), port=8000)

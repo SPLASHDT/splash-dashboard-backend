@@ -37,28 +37,31 @@ import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+import os 
+from dotenv import load_dotenv
 
 # Mount Google Drive # only for google colab environment
 # drive.mount('/content/drive')
 
  
+load_dotenv("config/.env")
 # Step 2: Downloading and concatenating our dataset.
 
 # We extract from thee file paths (wave, wind, water level(wl)). NB: we have a state file so if we do not have the proceeding data we proceed using the nearest time.
 # SPLASH_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
-SPLASH_wave_folder = './other_assets/data_inputs/wave_level/Jan25/'
+SPLASH_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER") #'./other_assets/data_inputs/wave_level/Jan25/'
 # SPLASH_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
-SPLASH_wind_folder = './other_assets/data_inputs/wind/Jan25/'
+SPLASH_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER") #'./other_assets/data_inputs/wind/Jan25/'
 # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/NEWLYN Jan 22 to Dec 26.txt'
-wl_file = './other_assets/data_inputs/water_level/Jan25/NEWLYN Jan 22 to Dec 26.txt'
-state_file = 'last_processed_block.txt'
+wl_file = os.environ.get("PENZANCE_WATER_LEVEL_FILE") #'./other_assets/data_inputs/water_level/Jan25/NEWLYN Jan 22 to Dec 26.txt'
+state_file = os.environ.get("STATE_FILE") #'last_processed_block.txt'
 
 # We must extract from the lat/long coordinates for Penzance wave buoy.
-Penzance_wave_buoy_LATITUDE = 50.10811
-Penzance_wave_buoy_LONGITUDE = -5.51515
+Penzance_wave_buoy_LATITUDE = float(os.environ.get("PENZANCE_WAVE_BUOY_LATITUDE")) #50.10811
+Penzance_wave_buoy_LONGITUDE = float(os.environ.get("PENZANCE_WAVE_BUOY_LONGITUDE")) #-5.51515
 
 # SPLASH_Digital_Twin_models_folder = '/content/drive/MyDrive/splash/data_inputs/models/penzance'
-SPLASH_Digital_Twin_models_folder = './other_assets/data_inputs/models/penzance'
+SPLASH_Digital_Twin_models_folder = os.environ.get("PENZANCE_MODELS_FOLDER") #'./other_assets/data_inputs/models/penzance'
 
 models = {
     'RF1': {},
@@ -583,7 +586,7 @@ def combine_features(df):
     hourly_freeboard = hourly_freeboard.reindex(date_range).interpolate(method='time').reset_index()
     hourly_freeboard.rename(columns={'index': 'datetime'}, inplace=True)
     overtopping_times = df[df['RF1_Final_Predictions'] == 1]['time']
-    send_to_this_output_path_folder = './other_assets/data_outputs/penzance/all_plots/combined_features.png'
+    send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE") #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
 
     save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times)
 
@@ -591,9 +594,9 @@ def combine_features(df):
 def plot_significant_wave_height(start_date_block):
     # Step 9. Now we also want to plot Hs and wave direction geospatially and save to figures folder.
 
-    send_here_wave_folder = './other_assets/data_inputs/wave_level/Jan25'
-    output_folder = './other_assets/data_outputs/penzance/waves'
-    state_file = './other_assets/last_processed_block.txt'
+    send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER") #'./other_assets/data_inputs/wave_level/Jan25'
+    output_folder = os.environ.get("PENZANCE_OUTPUT_WAVES_FOLDER") #'./other_assets/data_outputs/penzance/waves'
+    state_file = os.environ.get("STATE_FILE_FOLDER") #'./other_assets/last_processed_block.txt'
 
     current_block = start_date_block.strftime('%Y%m%d')
     print(f"Processing Block: {current_block}")
