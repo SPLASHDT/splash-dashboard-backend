@@ -98,13 +98,6 @@ rf3_wave_dir_min_regularisation = 50
 rf3_wave_dir_max_regularisation = 93
 final_DawlishTwin_dataset = pd.DataFrame()
 
-# time_stamps = pd.DataFrame()
-# overtopping_counts_rf1_rf2 = []
-# overtopping_counts_rf3_rf4 = []
-# rf1_confidences_GINI = []
-# rf3_confidences_GINI = []
-# rf1_predictions = []
-
 # This takes data from the wave block
 def get_wave_files(block_date):
     Current_wave_files = []
