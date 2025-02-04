@@ -87,4 +87,4 @@ def get_penzance_wave_overtopping():
 
 
 if __name__ == '__main__':
-  app.run(debug=bool(os.environ.get("DEBUG")), port=8000)
+  app.run(debug=bool(os.environ.get("DEBUG")), port=8080)
