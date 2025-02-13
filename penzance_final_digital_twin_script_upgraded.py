@@ -37,6 +37,8 @@ import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+import seaborn as sns
+from matplotlib.colors import Normalize
 import os 
 from dotenv import load_dotenv
 import utils
@@ -88,6 +90,8 @@ use_our_previous_SPLASH_rf3_rf4 = None
 previous_rf1_confidences = None
 previous_rf3_confidences = None
 df = pd.DataFrame()
+start_time = datetime.now()
+
 
 
 def setInputFolderPaths(option: str = "penzance"):
@@ -137,6 +141,7 @@ def extract_wave_data(Met_office_wave_files):
 def extract_wind_data(wind_file):
     data = []
     grbs = pygrib.open(wind_file)
+
     for grb in grbs:
         if grb.level == 10:
             values = grb.values
@@ -150,14 +155,20 @@ def extract_wind_data(wind_file):
             Met_office_forecast_time = grb.forecastTime
             init_datetime = datetime.strptime(f"{data_date:08d}{data_time:04d}", "%Y%m%d%H%M")
             Met_office_forecast_datetime = init_datetime + timedelta(hours=Met_office_forecast_time)
-            data.append({'datetime': Met_office_forecast_datetime, 'value': value})
+
+            if Met_office_forecast_time <= 54 or Met_office_forecast_time % 3 == 0:
+                data.append({'datetime': Met_office_forecast_datetime, 'value': value})
+
     grbs.close()
+
     if not data:
         raise ValueError("There is no available wind data.")
+
     Penzance_df_wind = pd.DataFrame(data)
     Penzance_df_wind['datetime'] = pd.to_datetime(Penzance_df_wind['datetime'])
     Penzance_df_wind = Penzance_df_wind.drop_duplicates(subset='datetime').set_index('datetime')
-    return Penzance_df_wind.resample('3H').mean()
+
+    return Penzance_df_wind
 
 # Now extract the wl data (this is the easiest, its in one combined text file)
 def extract_water_level_data():
@@ -198,18 +209,28 @@ def process_block(block_date):
             wind_direction_data = wind_direction_future.result().rename(columns={'value': 'Wind Direction'})
             water_level_data = water_level_future.result()
 
-        Our_finalised_combined_data = wave_data.join(wind_speed_data, how='left')
-        Our_finalised_combined_data = Our_finalised_combined_data.join(wind_direction_data, how='left')
-        Our_finalised_combined_data = Our_finalised_combined_data.join(water_level_data, how='left')
+        Our_finalised_combined_data = wave_data.resample('1H').mean()
+        wind_speed_data = wind_speed_data.resample('1H').mean()
+        wind_direction_data = wind_direction_data.resample('1H').mean()
+        water_level_data = water_level_data.resample('1H').interpolate()
+        Our_finalised_combined_data = Our_finalised_combined_data.join([wind_speed_data, wind_direction_data, water_level_data], how='left')
+        first_54_hours = Our_finalised_combined_data.iloc[:54] 
+        after_54_hours = Our_finalised_combined_data.iloc[54:].resample('3H').asfreq() 
+        after_54_hours = after_54_hours.join(wind_speed_data, on='datetime', how='left', rsuffix='_wind').interpolate()
+        after_54_hours = after_54_hours.join(wind_direction_data, on='datetime', how='left', rsuffix='_dir').interpolate()
+        after_54_hours = after_54_hours.join(water_level_data, on='datetime', how='left', rsuffix='_wl').interpolate()
+        Our_finalised_combined_data = pd.concat([first_54_hours, after_54_hours])
+        Our_finalised_combined_data.reset_index(inplace=True)
 
-        start_date = Our_finalised_combined_data.index.min()
-        end_date = Our_finalised_combined_data.index.max()
+        start_date = Our_finalised_combined_data['datetime'].min()
+        end_date = Our_finalised_combined_data['datetime'].max()
         print(f"Processed Block: Start Date = {start_date}, End Date = {end_date}")
 
+        # Save the current block state
         with open(state_file, 'w') as file:
             file.write(block_date.strftime("%Y-%m-%d"))
 
-        return Our_finalised_combined_data.reset_index()
+        return Our_finalised_combined_data
 
     except ValueError as e:
         print(f"Error: {e}")
@@ -253,7 +274,7 @@ def get_digital_twin_dataset():
         start_time_tmp = df['time'].iloc[0]
     else:
         raise ValueError("No data could be processed for the current or previous blocks.")
-    
+
     return df, start_time_tmp, start_date_block_tmp
 
 
@@ -367,6 +388,7 @@ def add_selected_model_col(dt_df, start_time_tmp):
 
 
 def process_wave_overtopping(df_adjusted): 
+    global use_our_previous_SPLASH_rf1_rf2, use_our_previous_SPLASH_rf3_rf4, previous_rf1_confidences, previous_rf3_confidences
     Met_office_time_stamps = df_adjusted['time'].dropna()
     Our_overtopping_counts_rig1_rf1_rf2 = []
     Our_overtopping_counts_rig2_rf3_rf4 = []
@@ -376,9 +398,12 @@ def process_wave_overtopping(df_adjusted):
     rf1_final_predictions = []
 
     for idx, row in df_adjusted.iterrows():
-        if pd.isna(row['time']):
-            rf1_final_predictions.append(0)
+        forecast_hour = (row['time'] - start_time).total_seconds() / 3600
+
+        # Only predict at hourly intervals up to 54h, then switch to 3-hourly
+        if forecast_hour > 54 and forecast_hour % 3 != 0:
             continue
+
         selected_model = row['Selected_Model']
         input_data = row[['Hs', 'Tm', 'shoreWaveDir', 'Wind(m/s)', 'shoreWindDir', 'Freeboard']].to_frame().T
 
@@ -387,7 +412,7 @@ def process_wave_overtopping(df_adjusted):
         rf1_confidence = Digital_Twin_rf1_model.predict_proba(input_data)[0][1]
         rf1_confidences.append(rf1_confidence)
 
-        # Apply revision functions
+        # Apply threshold criteria
         final_rf1_prediction_use = revise_rf1_prediction(rf1_prediction, row['Hs'])
         final_rf1_prediction_use = revise_rf1_prediction_wind(final_rf1_prediction_use, row['Wind(m/s)'])
         final_rf1_prediction_use = revise_rf1_prediction_crossshorewind(final_rf1_prediction_use, row['shoreWindDir'])
@@ -397,7 +422,8 @@ def process_wave_overtopping(df_adjusted):
         # Store final predictions for both dots and further processing
         rf1_final_predictions.append(final_rf1_prediction_use)
 
-        # Existing logic for overtopping counts
+
+        # Get overtopping counts based on RF1 prediction
         if final_rf1_prediction_use == 0:
             Our_overtopping_counts_rig1_rf1_rf2.append(0)
         else:
@@ -411,6 +437,7 @@ def process_wave_overtopping(df_adjusted):
             rf3_prediction = rf3_model.predict(input_data)[0]
             rf3_confidence = rf3_model.predict_proba(input_data)[0][1]
             rf3_confidences.append(rf3_confidence)
+
             if rf3_prediction == 0:
                 Our_overtopping_counts_rig2_rf3_rf4.append(0)
             else:
@@ -451,72 +478,62 @@ def plot_overtopping_graphs(Met_office_time_stamps_df, Our_overtopping_counts_ri
     ax1.set_title('Penzance, Seawall crest', fontsize=10, fontweight='bold') # may want to change the names of both locations, not sure just lest it at this.
     ax2.set_title('Penzance, Seawall crest (sheltered)', fontsize=10, fontweight='bold')
 
+    # Fix selected timestamps for plotting (first 54h hourly, then 3-hourly)
+    selected_timestamps = []
+    for timestamp in df_adjusted['time']:
+        forecast_hour = (timestamp - start_time).total_seconds() / 3600
+        if forecast_hour <= 54 or forecast_hour % 3 == 0:
+            selected_timestamps.append(timestamp)
 
+    df_adjusted = df_adjusted[df_adjusted['time'].isin(selected_timestamps)]
 
-    # Step 7: Model Plotting
-
-    if use_our_previous_SPLASH_rf1_rf2 and previous_rf1_confidences:  # this is the plotting for rig 1
-        for i, prev_count in enumerate(use_our_previous_SPLASH_rf1_rf2):
-            if prev_count != Our_overtopping_counts_rig1_rf1_rf2[i]:
-                if prev_count > 0:
-                    prev_color = get_confidence_color(previous_rf1_confidences[i])
-                    ax1.scatter(Met_office_time_stamps_df.iloc[i], prev_count, marker='o', color=prev_color, s=30, alpha=0.3, edgecolor='black', linewidth=1)
-
+    # Rig 1 (Seawall Crest)
     for i, count in enumerate(Our_overtopping_counts_rig1_rf1_rf2):
+        time_point = Met_office_time_stamps.iloc[i]
+
+        if time_point not in selected_timestamps:
+            continue  # Skip timestamps outside valid intervals
+
         if count == 0:
-            ax1.scatter(Met_office_time_stamps_df.iloc[i], count, marker='x', color='black', s=100, linewidths=1.5)
+            ax1.scatter(time_point, count, marker='x', color='black', s=100, linewidths=1.5)
         else:
             color = get_confidence_color(rf1_confidences[i])
-            ax1.scatter(Met_office_time_stamps_df.iloc[i], count, marker='o', color=color, s=75, edgecolor='black', linewidth=1)
-
-        if use_our_previous_SPLASH_rf1_rf2:
-            if use_our_previous_SPLASH_rf1_rf2[i] != count:
-                direction = '↑' if count > use_our_previous_SPLASH_rf1_rf2[i] else '↓'
-                vertical_position = count + 2 if direction == '↑' else count - 2
-                ax1.text(Met_office_time_stamps_df.iloc[i], vertical_position, direction, fontsize=10, color='black', fontweight='bold',
-                         horizontalalignment='center')
+            ax1.scatter(time_point, count, marker='o', color=color, s=75, edgecolor='black', linewidth=1)
 
     ax1.axhline(y=6, color='black', linestyle='--', linewidth=1, label='25% IQR (6)')
     ax1.axhline(y=54, color='black', linestyle='--', linewidth=1, label='75% IQR (54)')
     ax1.set_ylim(-10, 120)
     ax1.set_xlabel('Time', fontsize=10)
-    ax1.set_ylabel('No. of Overtopping Occurences (Per 10 Mins)', fontsize=10)
-    ax1.set_xticks(Met_office_time_stamps_df)
+    ax1.set_ylabel('No. of Overtopping Occurrences (Per 10 Mins)', fontsize=10)
+    ax1.set_xticks(selected_timestamps)
     ax1.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
     ax1.tick_params(axis='x', rotation=90, labelsize=8)
     ax1.tick_params(axis='y', labelsize=8)
 
-    if use_our_previous_SPLASH_rf3_rf4 and previous_rf3_confidences: # now we plot for rig 2
-        for i, prev_count in enumerate(use_our_previous_SPLASH_rf3_rf4):
-            if prev_count != Our_overtopping_counts_rig2_rf3_rf4[i]:
-                if prev_count > 0:
-                    prev_color = get_confidence_color(previous_rf3_confidences[i])
-                    ax2.scatter(Met_office_time_stamps_df.iloc[i], prev_count, marker='o', color=prev_color, s=30, alpha=0.3, edgecolor='black', linewidth=1)
-
+    # Rig 2 (Seawall Crest Sheltered)
     for i, count in enumerate(Our_overtopping_counts_rig2_rf3_rf4):
+        time_point = Met_office_time_stamps.iloc[i]
+
+        if time_point not in selected_timestamps:
+            continue  # Skip timestamps outside valid intervals
+
         if count == 0:
-            ax2.scatter(Met_office_time_stamps_df.iloc[i], count, marker='x', color='black', s=100, linewidths=1.5)
+            ax2.scatter(time_point, count, marker='x', color='black', s=100, linewidths=1.5)
         else:
             color = get_confidence_color(rf3_confidences[i])
-            ax2.scatter(Met_office_time_stamps_df.iloc[i], count, marker='o', color=color, s=75, edgecolor='black', linewidth=1)
-
-        if use_our_previous_SPLASH_rf3_rf4:
-            if use_our_previous_SPLASH_rf3_rf4[i] != count:
-                direction = '↑' if count > use_our_previous_SPLASH_rf3_rf4[i] else '↓'
-                vertical_position = count + 2 if direction == '↑' else count - 2
-                ax2.text(Met_office_time_stamps_df.iloc[i], vertical_position, direction, fontsize=10, color='black', fontweight='bold',
-                         horizontalalignment='center')
+            ax2.scatter(time_point, count, marker='o', color=color, s=75, edgecolor='black', linewidth=1)
 
     ax2.axhline(y=2, color='black', linestyle='--', linewidth=1, label='25% IQR (2)')
     ax2.axhline(y=9, color='black', linestyle='--', linewidth=1, label='75% IQR (9)')
     ax2.set_ylim(-5, 120)
     ax2.set_xlabel('Time', fontsize=10)
-    ax2.set_ylabel('No. of Overtopping Occurences (Per 10 Mins)', fontsize=10)
-    ax2.set_xticks(Met_office_time_stamps_df)
+    ax2.set_ylabel('No. of Overtopping Occurrences (Per 10 Mins)', fontsize=10)
+    ax2.set_xticks(selected_timestamps)
     ax2.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
     ax2.tick_params(axis='x', rotation=90, labelsize=8)
     ax2.tick_params(axis='y', labelsize=8)
 
+    # Confidence Legends
     Digital_twin_has_high_confidence = mlines.Line2D([], [], color='#00008B', marker='o', linestyle='None', markersize=8, label='High Confidence (> 80%)')
     Digital_twin_has_medium_confidence = mlines.Line2D([], [], color='#4682B4', marker='o', linestyle='None', markersize=8, label='Medium Confidence (50-80%)')
     Digital_twin_has_low_confidence = mlines.Line2D([], [], color='aqua', marker='o', linestyle='None', markersize=8, label='Low Confidence (< 50%)')
@@ -553,6 +570,7 @@ def save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_f
                    df.loc[df['time'].isin(overtopping_times), 'Hs'], 
                    color='red', label='Overtopping Event', zorder=5)
     axs[0].set_ylabel('Hs (m)', fontsize=10)
+    axs[0].set_ylim(0, 5)
     axs[0].legend(loc='upper left', fontsize=8)
     axs[0].grid(True)
 
@@ -571,6 +589,7 @@ def save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_f
                    df.loc[df['time'].isin(overtopping_times), 'Wind(m/s)'], 
                    color='red', label='Overtopping Event', zorder=5)
     axs[2].set_ylabel('Wind Speed (m/s)', fontsize=10)
+    axs[2].set_ylim(0, 25)
     axs[2].legend(loc='upper left', fontsize=8)
     axs[2].grid(True)
     axs[2].set_xlabel('Time', fontsize=10)
@@ -592,9 +611,14 @@ def combine_features(df):
     )
     hourly_freeboard['datetime'] = pd.to_datetime(hourly_freeboard['date'] + ' ' + hourly_freeboard['time'], format='%d/%m/%Y %H:%M')
     hourly_freeboard = hourly_freeboard.set_index('datetime')[['water_level']]
-    date_range = pd.date_range(start=df['time'].min(), end=df['time'].max(), freq='1H')
+    date_range = pd.date_range(start=df['time'].min(), end=df['time'].max(), freq='1h')
     hourly_freeboard = hourly_freeboard.reindex(date_range).interpolate(method='time').reset_index()
     hourly_freeboard.rename(columns={'index': 'datetime'}, inplace=True)
+    df['time'] = pd.to_datetime(df['time'])
+    df.set_index('time', inplace=True)
+    df['Hs'] = df['Hs'].interpolate(method='time')
+    df['Wind(m/s)'] = df['Wind(m/s)'].interpolate(method='time')
+    df.reset_index(inplace=True)
     overtopping_times = df[df['RF1_Final_Predictions'] == 1]['time']
     send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE") #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
 
@@ -651,6 +675,8 @@ def plot_significant_wave_height(start_date_block):
             # Coordinates for Penzance (study site)
             penzance_lat_seawall = 50.08874
             penzance_lon_seawall = -5.52474
+            dawlish_lat_seawall = 50.56757
+            dawlish_lon_seawall = -3.42424
 
             for time_idx, time_value in enumerate(time_combined):
                 if time_idx % 6 == 0:  # Plot every 6 hours
@@ -665,32 +691,56 @@ def plot_significant_wave_height(start_date_block):
                     wave_dir_frame = hs_frame_digital_twin['VMDR']
                     wave_dir = wave_dir_frame.values
 
-                    contour = plt.contourf(
-                        hs_frame_digital_twin['longitude'].values,
-                        hs_frame_digital_twin['latitude'].values,
-                        z_data,
-                        levels=20,
-                        cmap='gist_ncar'
-                    )
-
                     longitudes = hs_frame_digital_twin['longitude'].values
                     latitudes = hs_frame_digital_twin['latitude'].values
                     lon_grid, lat_grid = np.meshgrid(longitudes, latitudes)
-                    u = np.cos(np.deg2rad(wave_dir))
-                    v = np.sin(np.deg2rad(wave_dir))
-                    skip = (slice(None, None, max(1, len(latitudes) // 5)), 
-                            slice(None, None, max(1, len(longitudes) // 5)))
-                    plt.quiver(
-                        lon_grid[skip], lat_grid[skip], u[skip], v[skip],
-                        color='black', scale=50, width=0.002, label='Wind Direction'
+                    U = -np.sin(np.deg2rad(wave_dir))
+                    V = -np.cos(np.deg2rad(wave_dir))
+
+                    magnitude = np.sqrt(U**2 + V**2)
+                    U_normalised = U / magnitude
+                    V_normalised = V / magnitude
+
+                    land_margin_mask = ~np.isnan(z_data) & (z_data > 0.2)
+                    U_normalised = np.where(land_margin_mask, U_normalised, np.nan)
+                    V_normalised = np.where(land_margin_mask, V_normalised, np.nan)
+
+
+                    density_factor = 12  # this is where can can change the number of arrows
+                    skip = (
+                        slice(None, None, max(1, len(latitudes) // density_factor)),
+                        slice(None, None, max(1, len(longitudes) // density_factor))
                     )
 
-                    plt.colorbar(label='Significant Wave Height (Hs) [m]')
-                    plt.scatter(penzance_lon_seawall, penzance_lat_seawall, color='black', marker='x', s=100, label='Penzance')
-                    plt.title(f'Significant Wave Height (Hs) & Wind Direction\nBlock: {current_block}, Time: {time_label}')
+                    mako_cmap = sns.color_palette("mako", as_cmap=True)
+                    norm = Normalize(vmin=0, vmax=11)
+
+                    contour = plt.contourf(
+                        longitudes, latitudes, z_data,
+                        levels=np.linspace(0, 11, 21),
+                        cmap=mako_cmap, norm=norm
+                    )
+                    cbar = plt.colorbar(contour, label='Significant Wave Height (Hs) [m]')
+                    cbar.set_ticks(np.linspace(0, 11, 12))
+
+                    plt.quiver(
+                        lon_grid[skip], lat_grid[skip], U_normalised[skip], V_normalised[skip],
+                        color='white', scale=50, width=0.002, label='_nolegend_'
+                    )
+
+                    plt.scatter(penzance_lon_seawall, penzance_lat_seawall, color='red', s=50, marker='s', label='Penzance', zorder=5)
+                    plt.scatter(dawlish_lon_seawall, dawlish_lat_seawall, color='red', s=50, label='Dawlish', zorder=5)
+
+                    legend_handles = [
+                        plt.Line2D([], [], color='white', marker='$\u2192$', markersize=10, linestyle='None', label='Wave Direction (°)'),
+                        plt.Line2D([], [], color='red', marker='s', markersize=10, linestyle='None', label='Penzance'),
+                        plt.Line2D([], [], color='red', marker='o', markersize=10, linestyle='None', label='Dawlish')
+                    ]
+                    plt.legend(handles=legend_handles, loc='upper left')
+
+                    plt.title(f'Significant Wave Height (Hs)\nBlock: {current_block}, Time: {time_label}')
                     plt.xlabel('Longitude')
                     plt.ylabel('Latitude')
-                    plt.legend(loc='upper left')
                     plt.grid(False)
 
                     output_file = os.path.join(output_folder, f'hs_wave_direction_plot_block_{current_block}_time_{time_label.replace(":", "_")}.png')
