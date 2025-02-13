@@ -39,12 +39,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import os 
 from dotenv import load_dotenv
+import utils
 
 # Mount Google Drive # only for google colab environment
 # drive.mount('/content/drive')
 
  
-load_dotenv("config/.env")
+utils.loadConfigFile()
 # Step 2: Downloading and concatenating our dataset.
 
 # We extract from thee file paths (wave, wind, water level(wl)). NB: we have a state file so if we do not have the proceeding data we proceed using the nearest time.
@@ -88,6 +89,15 @@ previous_rf1_confidences = None
 previous_rf3_confidences = None
 df = pd.DataFrame()
 
+
+def setInputFolderPaths(option: str = "penzance"):
+    global SPLASH_wave_folder, SPLASH_wind_folder, wl_file
+    met_office_wave_folder, met_office_wind_folder, water_level_file, penzance_water_level_file = utils.getLocationDataPaths(option)
+    SPLASH_wave_folder = met_office_wave_folder
+    # Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
+    SPLASH_wind_folder = met_office_wind_folder
+    # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
+    wl_file = penzance_water_level_file
 
 # Extracting wave data
 def get_wave_files(block_date):

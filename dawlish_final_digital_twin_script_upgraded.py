@@ -99,6 +99,17 @@ rf3_wave_dir_min_regularisation = 50
 rf3_wave_dir_max_regularisation = 93
 final_DawlishTwin_dataset = pd.DataFrame()
 
+
+def setInputFolderPaths(option: str = "dawlish"):
+    global Met_office_wave_folder, Met_office_wind_folder, wl_file
+    met_office_wave_folder, met_office_wind_folder, water_level_file, penzance_water_level_file = utils.getLocationDataPaths(option)
+    Met_office_wave_folder = met_office_wave_folder
+    # Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
+    Met_office_wind_folder = met_office_wind_folder
+    # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
+    wl_file = water_level_file
+
+
 # This takes data from the wave block
 def get_wave_files(block_date):
     Current_wave_files = []

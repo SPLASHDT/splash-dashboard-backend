@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import dawlish_final_digital_twin_script_upgraded as ddt
 import penzance_final_digital_twin_script_upgraded as pdt
 import pandas as pd
@@ -19,6 +19,8 @@ app = Flask(__name__)
 
 @app.route('/splash/dawlish/wave-overtopping', methods=['GET'])
 def get_dawlish_wave_overtopping():
+    option = request.args.get('option', 'dawlish') 
+    ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset()
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
 
@@ -52,7 +54,9 @@ def get_dawlish_wave_overtopping():
 
 
 @app.route('/splash/penzance/wave-overtopping', methods=['GET'])
-def get_penzance_wave_overtopping():    
+def get_penzance_wave_overtopping():   
+    option = request.args.get('option', 'penzance') 
+    pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset()
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     pdt.add_selected_model_col(final_Penzance_Twin_dataset, start_time)
