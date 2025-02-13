@@ -215,9 +215,19 @@ def process_block(block_date):
             water_level_data = water_level_future_NOCForecast.result()
 
         # Merge all data into a single DataFrame
-        Finale_Dawlish_combined_data = wave_data.join(wind_speed_data, how='left')
-        Finale_Dawlish_combined_data = Finale_Dawlish_combined_data.join(wind_direction_data, how='left')
-        Finale_Dawlish_combined_data = Finale_Dawlish_combined_data.join(water_level_data, how='left')
+            Finale_Dawlish_combined_data = wave_data.resample('1H').mean()
+            wind_speed_data = wind_speed_data.resample('1H').mean()
+            wind_direction_data = wind_direction_data.resample('1H').mean()
+            water_level_data = water_level_data.resample('1H').interpolate()
+
+            Finale_Dawlish_combined_data = Finale_Dawlish_combined_data.join([wind_speed_data, wind_direction_data, water_level_data], how='left')
+            first_54_hours = Finale_Dawlish_combined_data.iloc[:54]  # First 54 hours remain hourly
+            after_54_hours = Finale_Dawlish_combined_data.iloc[54:].resample('3H').asfreq()  # Wave data every 3H
+            after_54_hours = after_54_hours.join(wind_speed_data, on='datetime', how='left', rsuffix='_wind').interpolate()
+            after_54_hours = after_54_hours.join(wind_direction_data, on='datetime', how='left', rsuffix='_dir').interpolate()
+            after_54_hours = after_54_hours.join(water_level_data, on='datetime', how='left', rsuffix='_wl').interpolate()
+            Finale_Dawlish_combined_data = pd.concat([first_54_hours, after_54_hours])
+
 
         # Log processed date range
         start_date = Finale_Dawlish_combined_data.index.min()
@@ -336,12 +346,21 @@ def revise_rf3_prediction(rf3_prediction, row):
 def get_confidence_color(confidence):
     try:
         confidence = float(confidence)
-        if confidence > 0.8:
-            return '#00008B'
-        elif 0.5 < confidence <= 0.8:
-            return '#4682B4'
+
+        if is_railway:
+            if confidence > 0.6:
+                return '#00008B'  # High confidence
+            elif 0.4 < confidence <= 0.6:
+                return '#4682B4'  # Medium confidence
+            return '#4682B4'  
         else:
-            return 'aqua'
+            if confidence > 0.8:
+                return '#00008B'  # High confidence
+            elif 0.5 < confidence <= 0.8:
+                return '#4682B4'  # Medium confidence
+            else:
+                return 'aqua' 
+
     except (ValueError, TypeError):
         return 'gray'
 
@@ -394,27 +413,40 @@ def process_wave_overtopping(df_adjusted_slideronly):
 
         if final_rf1_prediction == 0:
             overtopping_counts_rf1_rf2.append(0)
+            overtopping_counts_rf3_rf4.append(0)  
         else:
-            rf2_model = machine_learning_models['RF2'][selected_model] # this means if rf1 says 1 then this will trigger rf2
+           # Run RF2 model (overtopping count)
+            rf2_model = machine_learning_models['RF2'][selected_model]
             rf2_prediction = rf2_model.predict(input_data)[0]
             overtopping_counts_rf1_rf2.append(rf2_prediction)
 
-        if final_rf1_prediction == 1:
-            rf3_model = machine_learning_models['RF3'][selected_model] # again our rf3 binary predictions
+            # Run RF3 model (secondary binary classifier)
+            rf3_model = machine_learning_models['RF3'][selected_model]
             rf3_prediction = rf3_model.predict(input_data)[0]
             rf3_confidence = rf3_model.predict_proba(input_data)[0][1]
             rf3_confidences_GINI.append(rf3_confidence)
+
+            # Apply threshold correction for RF3
             final_rf3_prediction = revise_rf3_prediction(rf3_prediction, row)
             if final_rf3_prediction == 0:
                 overtopping_counts_rf3_rf4.append(0)
             else:
+                # Run RF4 model (regression model)
                 rf4_regressor = machine_learning_models['RF4']['Regressor'][selected_model] # again if rf3 says 1 then this will trigger rf4, rememeber if rf3 says 0 this means rf4 is not triggered
                 rf4_prediction = rf4_regressor.predict(input_data)[0]
                 overtopping_counts_rf3_rf4.append(min(rf4_prediction, rf2_prediction))
-        else:
-            overtopping_counts_rf3_rf4.append(0)
-            rf3_confidences_GINI.append(0)
+
+    min_len = len(df_adjusted_slideronly)
+    while len(rf3_confidences_GINI) < min_len:
+        rf3_confidences_GINI.append(0)
+    while len(overtopping_counts_rf3_rf4) < min_len:
+        overtopping_counts_rf3_rf4.append(0)
+
     df_adjusted_slideronly['RF1_Final_Predictions'] = rf1_predictions
+    df_adjusted_slideronly['RF2_Overtopping_Count'] = overtopping_counts_rf1_rf2
+    df_adjusted_slideronly['RF3_Final_Predictions'] = overtopping_counts_rf3_rf4
+    df_adjusted_slideronly['RF1_Confidence'] = rf1_confidences_GINI
+    df_adjusted_slideronly['RF3_Confidence'] = rf3_confidences_GINI
 
 
     # Prepare DataFrames for Plotly
@@ -442,7 +474,8 @@ def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_r
     time_stamps = df_adjusted_slideronly_tmp['time']
     start_date = time_stamps.iloc[0]
     end_date = time_stamps.iloc[-1]
-    xticks = pd.date_range(start=start_date, end=end_date, freq='3H')
+    xticks = df_adjusted_slideronly_tmp['time'] 
+
 
     # Plot for Rig 1
     for i, count in enumerate(overtopping_counts_rf1_rf2):
@@ -455,9 +488,10 @@ def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_r
     axes1_DG_Plot.axhline(y=6, color='black', linestyle='--', linewidth=1, label='25% IQR (6)')
     axes1_DG_Plot.axhline(y=54, color='black', linestyle='--', linewidth=1, label='75% IQR (54)')
     axes1_DG_Plot.set_ylim(-10, 120)
-    axes1_DG_Plot.set_xlim(start_date - timedelta(hours=1.5), end_date + timedelta(hours=1.5))
-    axes1_DG_Plot.set_xticks(xticks)
-    axes1_DG_Plot.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+    axes1_DG_Plot.set_xlim(df_adjusted_slideronly_tmp['time'].min(), df_adjusted_slideronly_tmp['time'].max())
+    axes1_DG_Plot.set_xticks(df_adjusted_slideronly_tmp['time'])
+    axes1_DG_Plot.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+    axes1_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
     axes1_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
     axes1_DG_Plot.tick_params(axis='y', labelsize=8)
     axes1_DG_Plot.set_title('Dawlish Seawall Crest', loc='center', fontsize=12, fontweight='bold')
@@ -468,15 +502,17 @@ def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_r
         if count == 0:
             axes2_DG_Plot.scatter(time_stamps.iloc[i], count, marker='x', color='black', s=80, linewidths=1.5)
         else:
-            color = get_confidence_color(rf3_confidences_GINI[i])
+            # Apply the adjusted color logic for the railway plot
+            color = get_confidence_color(rf3_confidences_GINI[i], is_railway=True)
             axes2_DG_Plot.scatter(time_stamps.iloc[i], count, marker='o', color=color, s=75, edgecolor='black', linewidth=1)
 
     axes2_DG_Plot.axhline(y=2, color='black', linestyle='--', linewidth=1, label='25% IQR (2)')
     axes2_DG_Plot.axhline(y=9, color='black', linestyle='--', linewidth=1, label='75% IQR (9)')
     axes2_DG_Plot.set_ylim(-5, 120)
-    axes2_DG_Plot.set_xlim(start_date - timedelta(hours=1.5), end_date + timedelta(hours=1.5))
-    axes2_DG_Plot.set_xticks(xticks)
-    axes2_DG_Plot.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+    axes2_DG_Plot.set_xlim(df_adjusted_slideronly['time'].min(), df_adjusted_slideronly['time'].max())
+    axes2_DG_Plot.set_xticks(df_adjusted_slideronly['time'])
+    axes2_DG_Plot.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+    axes2_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
     axes2_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
     axes2_DG_Plot.tick_params(axis='y', labelsize=8)
     axes2_DG_Plot.set_title('Dawlish Railway Line', loc='center', fontsize=12, fontweight='bold')
@@ -491,7 +527,7 @@ def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_r
 
     fig.legend(handles=[Randforest_high_confidence_scoring_metrics, Randforest_medium_confidence_scoring_metrics,
                         Randforest_low_confidence_scoring_metrics, There_is_no_overtopping_recorded, Upper_and_lower_iqr_dashed_lines],
-            loc='lower center', bbox_to_anchor=(0.5, -0.15), ncol=5, frameon=False)
+                loc='lower center', bbox_to_anchor=(0.5, -0.15), ncol=5, frameon=False)
 
     plt.tight_layout()
     plt.show()
@@ -507,9 +543,9 @@ def on_submit_clicked(button):
 
 # Step 10, now we want to plot, for the processed block, what the changing Hs, freeboard, wind speed and direction was.
 def save_penazance_combined_features_plot_with_overtopping(df, overtopping_times, output_path, start_date, end_date):
-    df = df.set_index('time').reindex(pd.date_range(start=start_date, end=end_date, freq='3H')).interpolate(method='time').reset_index()
+    df = df.set_index('time').reindex(pd.date_range(start=start_date, end=end_date, freq='1H')).interpolate(method='time').reset_index()
     df.rename(columns={'index': 'time'}, inplace=True)
-    fig, axs = plt.subplots(3, 1, figsize=(10, 9), dpi=300, sharex=True)  # Changed to 3 subplots
+    fig, axs = plt.subplots(3, 1, figsize=(10, 9), dpi=300, sharex=True)
     overtopping_times_filtered = [time for time in overtopping_times if time in df['time'].values]
 
     # Hs
@@ -518,30 +554,29 @@ def save_penazance_combined_features_plot_with_overtopping(df, overtopping_times
                    df[df['time'].isin(overtopping_times_filtered)]['Hs'],
                    color='red', label='Overtopping Event', zorder=5)
     axs[0].set_ylabel('Hs (m)', fontsize=10)
+    axs[0].set_ylim(0, 5)
     axs[0].legend(loc='upper left', fontsize=8)
     axs[0].grid(True)
 
     # Freeboard
 
-# Extract hourly water level data directly from the text file
+    # Extract hourly water level data directly from the text file
     wl_data_hourly = extract_water_level_for_range(start_date, end_date)
 
-# Plot the Freeboard data (water level) from the text file
+    # Plot the Freeboard data (water level) from the text file
     axs[1].plot(
-    wl_data_hourly.index, wl_data_hourly['water_level'],
-    label='Freeboard (m)', linewidth=1.5, color='orange'
+        wl_data_hourly.index, wl_data_hourly['water_level'],
+        label='Freeboard (m)', linewidth=1.5, color='orange'
     )
     axs[1].scatter(
-    overtopping_times_filtered,
-    wl_data_hourly.loc[wl_data_hourly.index.isin(overtopping_times_filtered), 'water_level'],
-    color='red', label='Overtopping Event', zorder=5
+        overtopping_times_filtered,
+        wl_data_hourly.loc[wl_data_hourly.index.isin(overtopping_times_filtered), 'water_level'],
+        color='red', label='Overtopping Event', zorder=5
     )
     axs[1].set_ylabel('Freeboard (m)', fontsize=10)
-    axs[1].set_ylim(0, 6)  # Adjust y-axis limits as needed
+    axs[1].set_ylim(0, 6)
     axs[1].legend(loc='upper left', fontsize=8)
     axs[1].grid(True)
-
-
 
     # Wind Speed
     axs[2].plot(df['time'], df['Wind(m/s)'], label='Wind Speed (m/s)', linewidth=1.5, color='green')
@@ -549,6 +584,7 @@ def save_penazance_combined_features_plot_with_overtopping(df, overtopping_times
                    df[df['time'].isin(overtopping_times_filtered)]['Wind(m/s)'],
                    color='red', label='Overtopping Event', zorder=5)
     axs[2].set_ylabel('Wind Speed (m/s)', fontsize=10)
+    axs[2].set_ylim(0, 25)
     axs[2].set_xlabel('Time', fontsize=10)
     axs[2].legend(loc='upper left', fontsize=8)
     axs[2].grid(True)
