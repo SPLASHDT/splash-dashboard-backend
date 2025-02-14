@@ -248,16 +248,17 @@ def process_block(block_date):
         return process_block(previous_block_date)
 
 
-def get_next_block():
+def get_next_block(start_date):
     # Use the current calendar date as today's block date
-    current_date = datetime.now().date()
+    # current_date = datetime.now().date()
+    current_date = start_date
     print(f"Starting process for today's date: {current_date}")
     return current_date
 
 
-def get_digital_twin_dataset():
+def get_digital_twin_dataset(start_date):
     # This indicates all our data entries in our combined block.
-    block_data = process_block(get_next_block())
+    block_data = process_block(get_next_block(start_date))
 
     if block_data is not None:
         # Select relevant columns and rename for consistency with the model input
@@ -748,7 +749,7 @@ def plot_significant_wave_height():
 
 def generate_overtopping_graphs():
     global final_DawlishTwin_dataset
-    final_DawlishTwin_dataset = get_digital_twin_dataset()
+    final_DawlishTwin_dataset = get_digital_twin_dataset(datetime.date().now())
     load_models(SPLASH_DIGITAL_TWIN_models_folder)
 
     process_wave_overtopping(final_DawlishTwin_dataset)

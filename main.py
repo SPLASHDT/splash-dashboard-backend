@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import dawlish_final_digital_twin_script_upgraded as ddt
 import penzance_final_digital_twin_script_upgraded as pdt
 import pandas as pd
+from datetime import datetime
 import os
 import utils
 
@@ -20,8 +21,11 @@ app = Flask(__name__)
 @app.route('/splash/dawlish/wave-overtopping', methods=['GET'])
 def get_dawlish_wave_overtopping():
     option = request.args.get('option', 'dawlish') 
+    # Set today's date by default to get current datasets
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
     ddt.setInputFolderPaths(option)
-    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset()
+    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
 
     tmp_seawall_crest_overtopping, tmp_railway_line_overtopping = ddt.process_wave_overtopping(final_DawlishTwin_dataset)
@@ -45,7 +49,6 @@ def get_dawlish_wave_overtopping():
 
     seawall_crest_overtopping = convert_dataframe_to_list(tmp_seawall_crest_overtopping)
     railway_line_overtopping = convert_dataframe_to_list(tmp_railway_line_overtopping)
-
 
     return jsonify({
         "seawall_crest_overtopping": seawall_crest_overtopping,
