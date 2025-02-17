@@ -58,9 +58,12 @@ def get_dawlish_wave_overtopping():
 
 @app.route('/splash/penzance/wave-overtopping', methods=['GET'])
 def get_penzance_wave_overtopping():   
-    option = request.args.get('option', 'penzance') 
+    option = request.args.get('option', 'penzance')
+    # Set today's date by default to get current datasets
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
     pdt.setInputFolderPaths(option)
-    final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset()
+    final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     pdt.add_selected_model_col(final_Penzance_Twin_dataset, start_time)
 

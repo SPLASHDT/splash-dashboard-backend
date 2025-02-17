@@ -240,8 +240,8 @@ def process_block(block_date):
 
 
 # Function to get the next block date, this is the tricky bit, the code should recognise the date on the files and then logically proceed to the next date but this should be verified
-def get_next_block():
-    today_date = datetime.now().date()
+def get_next_block(block_date):
+    today_date = block_date
     if os.path.exists(state_file):
         with open(state_file, 'r') as file:
             last_date = datetime.strptime(file.read().strip(), "%Y-%m-%d").date()
@@ -252,11 +252,11 @@ def get_next_block():
         return today_date  # Start with today's date
 
 
-def get_digital_twin_dataset():   
+def get_digital_twin_dataset(start_date):   
 
     # This is our file names, these are all the variables we need to make our predicitons.
     # Ensure we get the next block to process
-    start_date_block_tmp = get_next_block()
+    start_date_block_tmp = get_next_block(start_date)
     Penzance_block_data_remember = process_block(start_date_block_tmp)
 
     # Check if the data is successfully loaded
@@ -464,12 +464,12 @@ def process_wave_overtopping(df_adjusted):
         'Confidence': rf3_confidences
     })
 
-    # plot_overtopping_graphs(Met_office_time_stamps, Our_overtopping_counts_rig1_rf1_rf2, Our_overtopping_counts_rig2_rf3_rf4, rf1_confidences, rf3_confidences)
+    # plot_overtopping_graphs(df_adjusted, Met_office_time_stamps, Our_overtopping_counts_rig1_rf1_rf2, Our_overtopping_counts_rig2_rf3_rf4, rf1_confidences, rf3_confidences)
 
     return data_rf1_rf2, data_rf3_rf4
 
 
-def plot_overtopping_graphs(Met_office_time_stamps_df, Our_overtopping_counts_rig1_rf1_rf2, Our_overtopping_counts_rig2_rf3_rf4, rf1_confidences, rf3_confidences):    
+def plot_overtopping_graphs(df_adjusted, Met_office_time_stamps_df, Our_overtopping_counts_rig1_rf1_rf2, Our_overtopping_counts_rig2_rf3_rf4, rf1_confidences, rf3_confidences):    
     global use_our_previous_SPLASH_rf1_rf2, use_our_previous_SPLASH_rf3_rf4, previous_rf1_confidences, previous_rf3_confidences
 
     clear_output(wait=True)
@@ -489,7 +489,7 @@ def plot_overtopping_graphs(Met_office_time_stamps_df, Our_overtopping_counts_ri
 
     # Rig 1 (Seawall Crest)
     for i, count in enumerate(Our_overtopping_counts_rig1_rf1_rf2):
-        time_point = Met_office_time_stamps.iloc[i]
+        time_point = Met_office_time_stamps_df.iloc[i]
 
         if time_point not in selected_timestamps:
             continue  # Skip timestamps outside valid intervals
@@ -512,7 +512,7 @@ def plot_overtopping_graphs(Met_office_time_stamps_df, Our_overtopping_counts_ri
 
     # Rig 2 (Seawall Crest Sheltered)
     for i, count in enumerate(Our_overtopping_counts_rig2_rf3_rf4):
-        time_point = Met_office_time_stamps.iloc[i]
+        time_point = Met_office_time_stamps_df.iloc[i]
 
         if time_point not in selected_timestamps:
             continue  # Skip timestamps outside valid intervals
@@ -750,7 +750,7 @@ def plot_significant_wave_height(start_date_block):
 
 def generate_overtopping_graphs():  
     global df 
-    df, start_time, start_date_block = get_digital_twin_dataset()
+    df, start_time, start_date_block = get_digital_twin_dataset(datetime.now().date())
     load_model_files(SPLASH_Digital_Twin_models_folder)
     add_selected_model_col(df, start_time)
 
