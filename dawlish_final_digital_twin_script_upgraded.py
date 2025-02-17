@@ -38,7 +38,6 @@ from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 # from google.colab import drive
-from datetime import datetime
 import seaborn as sns
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
@@ -344,7 +343,7 @@ def revise_rf3_prediction(rf3_prediction, row):
 
 
 # Step 6: Now we assign confidence for our model.
-def get_confidence_color(confidence):
+def get_confidence_color(confidence, is_railway=False):
     try:
         confidence = float(confidence)
 
@@ -510,8 +509,8 @@ def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_r
     axes2_DG_Plot.axhline(y=2, color='black', linestyle='--', linewidth=1, label='25% IQR (2)')
     axes2_DG_Plot.axhline(y=9, color='black', linestyle='--', linewidth=1, label='75% IQR (9)')
     axes2_DG_Plot.set_ylim(-5, 120)
-    axes2_DG_Plot.set_xlim(df_adjusted_slideronly['time'].min(), df_adjusted_slideronly['time'].max())
-    axes2_DG_Plot.set_xticks(df_adjusted_slideronly['time'])
+    axes2_DG_Plot.set_xlim(df_adjusted_slideronly_tmp['time'].min(), df_adjusted_slideronly_tmp['time'].max())
+    axes2_DG_Plot.set_xticks(df_adjusted_slideronly_tmp['time'])
     axes2_DG_Plot.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
     axes2_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
     axes2_DG_Plot.tick_params(axis='x', rotation=90, labelsize=8)
@@ -749,7 +748,7 @@ def plot_significant_wave_height():
 
 def generate_overtopping_graphs():
     global final_DawlishTwin_dataset
-    final_DawlishTwin_dataset = get_digital_twin_dataset(datetime.date().now())
+    final_DawlishTwin_dataset = get_digital_twin_dataset(datetime.now().date())
     load_models(SPLASH_DIGITAL_TWIN_models_folder)
 
     process_wave_overtopping(final_DawlishTwin_dataset)
