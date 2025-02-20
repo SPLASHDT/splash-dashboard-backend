@@ -385,9 +385,10 @@ def add_selected_model_col(dt_df, start_time_tmp):
                 return 'T72'  # later model
 
         dt_df['Selected_Model'] = dt_df.apply(select_model_based_on_time, axis=1)
+    return dt_df
 
 
-def process_wave_overtopping(df_adjusted): 
+def process_wave_overtopping(df_adjusted, start_time): 
     global use_our_previous_SPLASH_rf1_rf2, use_our_previous_SPLASH_rf3_rf4, previous_rf1_confidences, previous_rf3_confidences
     Met_office_time_stamps = df_adjusted['time'].dropna()
     Our_overtopping_counts_rig1_rf1_rf2 = []
@@ -557,7 +558,7 @@ def plot_overtopping_graphs(df_adjusted, Met_office_time_stamps_df, Our_overtopp
 # Update overtopping graphs after inputting new variales values
 def on_submit_clicked(b):
     df_adjusted = adjust_features(df)
-    process_wave_overtopping(df_adjusted)
+    process_wave_overtopping(df_adjusted, start_time)
 
 # step 8: plot now the subplot figures 
 
@@ -749,15 +750,15 @@ def plot_significant_wave_height(start_date_block):
                     print(f"Saved plot for time {time_label} to {output_file}")
 
 def generate_overtopping_graphs():  
-    global df 
+    global df, start_time 
     df, start_time, start_date_block = get_digital_twin_dataset(datetime.now().date())
     load_model_files(SPLASH_Digital_Twin_models_folder)
-    add_selected_model_col(df, start_time)
+    df = add_selected_model_col(df, start_time)
 
-    submit_button.on_click(lambda b: process_wave_overtopping(adjust_features(df)))
+    submit_button.on_click(lambda b: process_wave_overtopping(adjust_features(df), start_time))
     submit_button.on_click(on_submit_clicked)
     display(significant_wave_height_slider_SPLASH, mean_period_slider_SPLASH, shore_wave_direction_slider_SPLASH, wind_speed_slider_SPLASH, shore_wind_direction_slider_SPLASH, freeboard_slider_SPLASH, submit_button)
-    process_wave_overtopping(df)
+    process_wave_overtopping(df, start_time)
 
     combine_features(df)
     # plot_significant_wave_height(start_date_block)

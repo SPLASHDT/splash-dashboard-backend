@@ -65,9 +65,9 @@ def get_penzance_wave_overtopping():
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
-    pdt.add_selected_model_col(final_Penzance_Twin_dataset, start_time)
+    final_Penzance_Twin_dataset = pdt.add_selected_model_col(final_Penzance_Twin_dataset, start_time)
 
-    tmp_seawall_crest_overtopping, tmp_seawall_crest_sheltered_overtopping = pdt.process_wave_overtopping(final_Penzance_Twin_dataset)
+    tmp_seawall_crest_overtopping, tmp_seawall_crest_sheltered_overtopping = pdt.process_wave_overtopping(final_Penzance_Twin_dataset, start_time)
 
     def convert_dataframe_to_list(df):
         if isinstance(df, pd.DataFrame):
