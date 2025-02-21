@@ -24,11 +24,19 @@ def get_dawlish_wave_overtopping():
     # Set today's date by default to get current datasets
     start_date = request.args.get('start_date', datetime.now().date())
     date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    sig_wave_height =  utils.getNumericValue(request.args.get('sig_wave_height', 0))
+    freeboard =  utils.getNumericValue(request.args.get('freeboard', 0))
+    mean_wave_period =  utils.getNumericValue(request.args.get('mean_wave_period', 0))
+    mean_wave_dir =  utils.getNumericValue(request.args.get('mean_wave_dir', 0))
+    wind_speed =  utils.getNumericValue(request.args.get('wind_speed', 0))
+    wind_direction =  utils.getNumericValue(request.args.get('wind_direction', 0))
+
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
 
-    tmp_seawall_crest_overtopping, tmp_railway_line_overtopping = ddt.process_wave_overtopping(final_DawlishTwin_dataset)
+    tmp_seawall_crest_overtopping, tmp_railway_line_overtopping = ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
 
     def convert_dataframe_to_list(df):
         if isinstance(df, pd.DataFrame):
@@ -62,12 +70,20 @@ def get_penzance_wave_overtopping():
     # Set today's date by default to get current datasets
     start_date = request.args.get('start_date', datetime.now().date())
     date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    sig_wave_height =  utils.getNumericValue(request.args.get('sig_wave_height', 0))
+    freeboard =  utils.getNumericValue(request.args.get('freeboard', 0))
+    mean_wave_period =  utils.getNumericValue(request.args.get('mean_wave_period', 0))
+    mean_wave_dir =  utils.getNumericValue(request.args.get('mean_wave_dir', 0))
+    wind_speed =  utils.getNumericValue(request.args.get('wind_speed', 0))
+    wind_direction =  utils.getNumericValue(request.args.get('wind_direction', 0))
+
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
-    final_Penzance_Twin_dataset = pdt.add_selected_model_col(final_Penzance_Twin_dataset, start_time)
+    final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
 
-    tmp_seawall_crest_overtopping, tmp_seawall_crest_sheltered_overtopping = pdt.process_wave_overtopping(final_Penzance_Twin_dataset, start_time)
+    tmp_seawall_crest_overtopping, tmp_seawall_crest_sheltered_overtopping = pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
 
     def convert_dataframe_to_list(df):
         if isinstance(df, pd.DataFrame):

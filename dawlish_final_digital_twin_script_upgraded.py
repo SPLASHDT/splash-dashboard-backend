@@ -117,12 +117,14 @@ def get_wave_files(block_date):
             Current_wave_files.append(os.path.join(Met_office_wave_folder, file_name))
     return sorted(Current_wave_files)
 
+
 # This takes data from the wind files
 def get_wind_file(template, folder, date):
     for file_name in os.listdir(folder):
         if file_name.startswith(template.format(date.strftime('%Y%m%d'))):
             return os.path.join(folder, file_name)
     return None
+
 
 # Now we take data from the wave file.
 def extract_wave_data(Current_wave_files):
@@ -139,6 +141,7 @@ def extract_wave_data(Current_wave_files):
         raise ValueError("No wave data available for the specified block.")
     combined_wave = pd.concat(wave_data, ignore_index=True)
     return combined_wave.set_index('datetime').resample('3H').mean()
+
 
 # Now we get the wind speed and direction files.
 def extract_wind_data(wind_file):
@@ -165,6 +168,7 @@ def extract_wind_data(wind_file):
     Met_wind['datetime'] = pd.to_datetime(Met_wind['datetime'])
     Met_wind = Met_wind.drop_duplicates(subset='datetime').set_index('datetime')
     return Met_wind.resample('3H').mean()
+
 
 # now we get our water level data, this is the easiest as its from a text file.
 def extract_water_level_data():
@@ -335,6 +339,7 @@ def revise_rf1_prediction(rf1_prediction, row):
     wave_dir_sweetspot = rf1_wave_dir_min_regularisation <= row['shoreWaveDir'] <= rf1_wave_dir_max_regularisation
     return 0 if rf1_prediction == 1 and not (hs_value_sweetspot or wind_value_sweetspot or wave_dir_sweetspot) else rf1_prediction
 
+
 def revise_rf3_prediction(rf3_prediction, row):
     hs_value_sweetspot = row['Hs'] > rf3_hs_threshold_regularisation
     wind_value_sweetspot = row['Wind(m/s)'] > rf3_wind_threshold_regularisation
@@ -364,6 +369,7 @@ def get_confidence_color(confidence, is_railway=False):
     except (ValueError, TypeError):
         return 'gray'
 
+
 def adjust_features(df):
     df_adjusted_slideronly = df.copy()
     df_adjusted_slideronly['Hs'] *= (1 + Sig_wave_height_slider_output.value / 100)
@@ -373,6 +379,18 @@ def adjust_features(df):
     df_adjusted_slideronly['shoreWindDir'] = Cross_shore_wind_dir_slider.value
     df_adjusted_slideronly['Freeboard'] *= (1 + freeboard_slider.value / 100)
     return df_adjusted_slideronly
+
+
+def adjust_overtopping_features(df, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction):
+    df_adjusted_slideronly = df.copy()
+    df_adjusted_slideronly['Hs'] *= (1 + sig_wave_height / 100)
+    df_adjusted_slideronly['Tm'] *= (1 + mean_wave_period / 100)
+    df_adjusted_slideronly['shoreWaveDir'] = mean_wave_dir
+    df_adjusted_slideronly['Wind(m/s)'] *= (1 + wind_speed / 100)
+    df_adjusted_slideronly['shoreWindDir'] = wind_direction
+    df_adjusted_slideronly['Freeboard'] *= (1 + freeboard / 100)
+    return df_adjusted_slideronly
+
 
 def process_wave_overtopping(df_adjusted_slideronly):
     time_stamps = df_adjusted_slideronly['time'].dropna()
@@ -465,6 +483,7 @@ def process_wave_overtopping(df_adjusted_slideronly):
     # plot_overtopping_graphs(df_adjusted_slideronly, overtopping_counts_rf1_rf2, overtopping_counts_rf3_rf4, rf1_confidences_GINI, rf3_confidences_GINI)
 
     return data_rf1_rf2, data_rf3_rf4
+
 
 #  Plot overtopping graphs using Matplotlib
 def plot_overtopping_graphs(df_adjusted_slideronly_tmp, overtopping_counts_rf1_rf2, overtopping_counts_rf3_rf4, rf1_confidences_GINI, rf3_confidences_GINI):

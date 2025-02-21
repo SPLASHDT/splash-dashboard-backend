@@ -1,5 +1,4 @@
 import os 
-import re
 from dotenv import load_dotenv
 
 def loadConfigFile():
@@ -34,3 +33,7 @@ def getLocationDataPaths(option: str):
 
 
     return met_office_wave_folder, met_office_wind_folder, water_level_file, penzance_water_level_file
+
+
+def getNumericValue(input_value):
+    return int(input_value) if isinstance(input_value, str) else input_value

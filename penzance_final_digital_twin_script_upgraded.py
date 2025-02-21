@@ -93,7 +93,6 @@ df = pd.DataFrame()
 start_time = datetime.now()
 
 
-
 def setInputFolderPaths(option: str = "penzance"):
     global SPLASH_wave_folder, SPLASH_wind_folder, wl_file
     met_office_wave_folder, met_office_wind_folder, water_level_file, penzance_water_level_file = utils.getLocationDataPaths(option)
@@ -102,6 +101,7 @@ def setInputFolderPaths(option: str = "penzance"):
     SPLASH_wind_folder = met_office_wind_folder
     # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
     wl_file = penzance_water_level_file
+
 
 # Extracting wave data
 def get_wave_files(block_date):
@@ -169,6 +169,7 @@ def extract_wind_data(wind_file):
     Penzance_df_wind = Penzance_df_wind.drop_duplicates(subset='datetime').set_index('datetime')
 
     return Penzance_df_wind
+
 
 # Now extract the wl data (this is the easiest, its in one combined text file)
 def extract_water_level_data():
@@ -333,6 +334,17 @@ def adjust_features(df):
     Penzance_adjusted_note['Wind(m/s)'] *= (1 + wind_speed_slider_SPLASH.value / 100)
     Penzance_adjusted_note['shoreWindDir'] = shore_wind_direction_slider_SPLASH.value
     Penzance_adjusted_note['Freeboard'] *= (1 + freeboard_slider_SPLASH.value / 100)
+    return Penzance_adjusted_note
+
+
+def adjust_overtopping_features(df, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction):
+    Penzance_adjusted_note = df.copy()
+    Penzance_adjusted_note['Hs'] *= (1 + sig_wave_height / 100)
+    Penzance_adjusted_note['Tm'] *= (1 + mean_wave_period / 100)
+    Penzance_adjusted_note['shoreWaveDir'] = mean_wave_dir
+    Penzance_adjusted_note['Wind(m/s)'] *= (1 + wind_speed / 100)
+    Penzance_adjusted_note['shoreWindDir'] = wind_direction
+    Penzance_adjusted_note['Freeboard'] *= (1 + freeboard / 100)
     return Penzance_adjusted_note
 
 
@@ -560,8 +572,8 @@ def on_submit_clicked(b):
     df_adjusted = adjust_features(df)
     process_wave_overtopping(df_adjusted, start_time)
 
-# step 8: plot now the subplot figures 
 
+# step 8: plot now the subplot figures 
 def save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times):
     fig, axs = plt.subplots(3, 1, figsize=(8, 8), dpi=300, sharex=True)
 
@@ -748,6 +760,7 @@ def plot_significant_wave_height(start_date_block):
                     plt.savefig(output_file, dpi=300)
                     plt.close()
                     print(f"Saved plot for time {time_label} to {output_file}")
+
 
 def generate_overtopping_graphs():  
     global df, start_time 
