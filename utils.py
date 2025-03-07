@@ -8,13 +8,15 @@ def loadConfigFile():
         config_file_path = "config/.env"
     elif environment == 'staging':
         config_file_path = "config/.env.staging"
-    else: 
+    elif environment == 'docker':
+        config_file_path = "config/.env.docker"
+    else:
         config_file_path = "config/.env.production"
 
     load_dotenv(config_file_path)
 
 
-def getLocationDataPaths(option: str):    
+def getLocationDataPaths(option: str):
     if option == "dawlish" or option == "penzance":
         met_office_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
         met_office_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER")
