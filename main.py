@@ -113,4 +113,7 @@ def get_penzance_wave_overtopping():
 
 
 if __name__ == '__main__':
-  app.run(debug=bool(os.environ.get("DEBUG")), port=8080)
+    if os.environ.get("SPLASH_ENV")=="docker":
+        app.run(debug=bool(os.environ.get("DEBUG")), host="0.0.0.0", port=8080)
+    else:
+        app.run(debug=bool(os.environ.get("DEBUG")), port=8080)
