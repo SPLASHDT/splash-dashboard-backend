@@ -15,7 +15,7 @@ dawlish_lat_seawall = os.environ.get("DAWLISH_LAT_SEAWALL")
 dawlish_lon_seawall = os.environ.get("DAWLISH_LON_SEAWALL")
 penzance_lat_seawall = os.environ.get("PENZANCE_LAT_SEAWALL")
 penzance_lon_seawall = os.environ.get("PENZANCE_LON_SEAWALL")
-DEBUG = eval(capitalize(os.environ.get("DEBUG")) # make DEBUG a boolean, we must ensure the string always starts in caps e.g. True/False as that's all eval recognises
+DEBUG = eval(os.environ.get("DEBUG").capitalize()) # make DEBUG a boolean, we must ensure the string always starts in caps e.g. True/False as that's all eval recognises
 app = Flask(__name__)
 
 @app.route('/splash/dawlish/wave-overtopping', methods=['GET'])
