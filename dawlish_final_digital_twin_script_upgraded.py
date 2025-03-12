@@ -173,7 +173,7 @@ def extract_wind_data(wind_file):
 # now we get our water level data, this is the easiest as its from a text file.
 def extract_water_level_data():
     water_level = pd.read_csv(
-        wl_file, sep='\s+', header=None, skiprows=2,
+        wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
@@ -184,7 +184,7 @@ def extract_water_level_data():
 def extract_water_level_for_range(start_date, end_date):
     # Load the water level data from the text file
     water_level = pd.read_csv(
-        wl_file, sep='\s+', header=None, skiprows=2,
+        wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     # Combine date and time columns and convert to datetime
