@@ -9,5 +9,5 @@ conda env create --file=env.yml -n backend
 RUN conda init
 
 ENV SPLASH_ENV=docker
-ENTRYPOINT conda run -n backend python /splash-dashboard-backend/main.py
+ENTRYPOINT cd /splash-dashboard-backend && conda run -n backend --no-capture-output python main.py
 EXPOSE 8080
