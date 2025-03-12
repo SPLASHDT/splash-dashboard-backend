@@ -15,7 +15,7 @@ dawlish_lat_seawall = os.environ.get("DAWLISH_LAT_SEAWALL")
 dawlish_lon_seawall = os.environ.get("DAWLISH_LON_SEAWALL")
 penzance_lat_seawall = os.environ.get("PENZANCE_LAT_SEAWALL")
 penzance_lon_seawall = os.environ.get("PENZANCE_LON_SEAWALL")
-
+DEBUG = eval(capitalize(os.environ.get("DEBUG")) # make DEBUG a boolean, we must ensure the string always starts in caps e.g. True/False as that's all eval recognises
 app = Flask(__name__)
 
 @app.route('/splash/dawlish/wave-overtopping', methods=['GET'])
@@ -113,7 +113,11 @@ def get_penzance_wave_overtopping():
 
 
 if __name__ == '__main__':
+    if DEBUG == True:
+        print("SPLASH_DT_Dawlish_models_folder = ", SPLASH_DT_Dawlish_models_folder)
+        print("SPLASH_DT_Penzance_models_folder = ", SPLASH_DT_Penzance_models_folder)
+
     if os.environ.get("SPLASH_ENV")=="docker":
-        app.run(debug=bool(os.environ.get("DEBUG")), host="0.0.0.0", port=8080)
+        app.run(debug=DEBUG, host="0.0.0.0", port=8080)
     else:
-        app.run(debug=bool(os.environ.get("DEBUG")), port=8080)
+        app.run(debug=DEBUG, port=8080)
