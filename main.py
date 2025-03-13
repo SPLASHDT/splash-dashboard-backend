@@ -120,7 +120,8 @@ def get_dawlish_significant_wave_height():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    significant_wave_height_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'significant_wave_height', 'Hs')
+    interpolated_DawlishTwin_dataset = ddt.interpolate_features_data(final_DawlishTwin_dataset)
+    significant_wave_height_list = utils.convert_dataframe_to_list(interpolated_DawlishTwin_dataset, 'significant_wave_height', 'Hs')
 
     return jsonify({
         "significant_wave_heights": significant_wave_height_list
@@ -135,8 +136,8 @@ def get_dawlish_water_level():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-
-    tidal_level_data_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'tidal_level', 'Freeboard')
+    interpolated_DawlishTwin_dataset = ddt.interpolate_features_data(final_DawlishTwin_dataset)
+    tidal_level_data_list = utils.convert_dataframe_to_list(interpolated_DawlishTwin_dataset, 'tidal_level', 'Freeboard')
 
     return jsonify({
         "tidal_levels": tidal_level_data_list
@@ -151,8 +152,8 @@ def get_dawlish_wind_speed():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-
-    tidal_level_data_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'wind_speed', 'Wind(m/s)')
+    interpolated_DawlishTwin_dataset = ddt.interpolate_features_data(final_DawlishTwin_dataset)
+    tidal_level_data_list = utils.convert_dataframe_to_list(interpolated_DawlishTwin_dataset, 'wind_speed', 'Wind(m/s)')
 
     return jsonify({
         "wind_speeds": tidal_level_data_list

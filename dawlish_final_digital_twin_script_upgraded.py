@@ -631,6 +631,17 @@ def save_combined_features(final_DawlishTwin_dataset):
         final_DawlishTwin_dataset, overtopping_times_dawlish, use_this_output_path_dawlish, block_start_date, block_end_date
     )
 
+
+# Interpolate features wave and atmospheric variables data
+def interpolate_features_data(final_DawlishTwin_dataset):
+    block_start_date = final_DawlishTwin_dataset['time'].min()
+    block_end_date = final_DawlishTwin_dataset['time'].max()
+    
+    final_DawlishTwin_dataset = final_DawlishTwin_dataset.set_index('time').reindex(pd.date_range(start=block_start_date, end=block_end_date, freq='1H')).interpolate(method='time').reset_index()
+    final_DawlishTwin_dataset.rename(columns={'index': 'time'}, inplace=True)
+    return final_DawlishTwin_dataset
+
+
 # Function to adjust the number of arrows
 def adjust_arrow_density(latitudes, longitudes, density_factor=12):
     return (
