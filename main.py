@@ -112,6 +112,52 @@ def get_penzance_wave_overtopping():
     })
 
 
+@app.route('/splash/dawlish/significant-wave-height', methods=['GET'])
+def get_dawlish_significant_wave_height():
+    option = request.args.get('option', 'dawlish') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    ddt.setInputFolderPaths(option)
+    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
+    significant_wave_height_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'significant_wave_height', 'Hs')
+
+    return jsonify({
+        "significant_wave_heights": significant_wave_height_list
+    })
+
+
+@app.route('/splash/dawlish/tidal-level', methods=['GET'])
+def get_dawlish_water_level():
+    option = request.args.get('option', 'dawlish') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    ddt.setInputFolderPaths(option)
+    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
+
+    tidal_level_data_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'tidal_level', 'Freeboard')
+
+    return jsonify({
+        "tidal_levels": tidal_level_data_list
+    })
+
+
+@app.route('/splash/dawlish/wind-speed', methods=['GET'])
+def get_dawlish_wind_speed():
+    option = request.args.get('option', 'dawlish') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    ddt.setInputFolderPaths(option)
+    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
+
+    tidal_level_data_list = utils.convert_dataframe_to_list(final_DawlishTwin_dataset, 'wind_speed', 'Wind(m/s)')
+
+    return jsonify({
+        "wind_speeds": tidal_level_data_list
+    })
+
 if __name__ == '__main__':
     if DEBUG == True:
         print("SPLASH_DT_Dawlish_models_folder = ", SPLASH_DT_Dawlish_models_folder)
