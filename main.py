@@ -159,5 +159,57 @@ def get_dawlish_wind_speed():
         "wind_speeds": tidal_level_data_list
     })
 
+
+@app.route('/splash/penzance/significant-wave-height', methods=['GET'])
+def get_penzance_significant_wave_height():
+    option = request.args.get('option', 'penzance') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    pdt.setInputFolderPaths(option)
+    final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+
+    interpolated_PenzanceTwin_dataset = ddt.interpolate_features_data(final_Penzance_Twin_dataset)
+    significant_wave_height_list = utils.convert_dataframe_to_list(interpolated_PenzanceTwin_dataset, 'significant_wave_height', 'Hs')
+
+    return jsonify({
+        "significant_wave_heights": significant_wave_height_list
+    })
+
+
+@app.route('/splash/penzance/tidal-level', methods=['GET'])
+def get_penzance_tidal_level():
+    option = request.args.get('option', 'penzance') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    pdt.setInputFolderPaths(option)
+    final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+
+    interpolated_PenzanceTwin_dataset = ddt.interpolate_features_data(final_Penzance_Twin_dataset)
+    tidal_level_list = utils.convert_dataframe_to_list(interpolated_PenzanceTwin_dataset, 'tidal_level', 'Freeboard')
+
+    return jsonify({
+        "tidal_levels": tidal_level_list
+    })
+
+
+@app.route('/splash/penzance/wind-speed', methods=['GET'])
+def get_penzance_wind_speed_level():
+    option = request.args.get('option', 'penzance') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    pdt.setInputFolderPaths(option)
+    final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+
+    interpolated_PenzanceTwin_dataset = ddt.interpolate_features_data(final_Penzance_Twin_dataset)
+    wind_speed_list = utils.convert_dataframe_to_list(interpolated_PenzanceTwin_dataset, 'wind_speed', 'Wind(m/s)')
+
+    return jsonify({
+        "wind_speeds": wind_speed_list
+    })
+
+
 if __name__ == '__main__':
   app.run(debug=bool(os.environ.get("DEBUG")), port=8080)

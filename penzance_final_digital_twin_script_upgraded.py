@@ -627,15 +627,21 @@ def combine_features(df):
     date_range = pd.date_range(start=df['time'].min(), end=df['time'].max(), freq='1h')
     hourly_freeboard = hourly_freeboard.reindex(date_range).interpolate(method='time').reset_index()
     hourly_freeboard.rename(columns={'index': 'datetime'}, inplace=True)
+    df = interpolate_features_data(df)
+    overtopping_times = df[df['RF1_Final_Predictions'] == 1]['time']
+    send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE") #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
+
+    save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times)
+
+
+# Interpolate features data
+def interpolate_features_data(df):
     df['time'] = pd.to_datetime(df['time'])
     df.set_index('time', inplace=True)
     df['Hs'] = df['Hs'].interpolate(method='time')
     df['Wind(m/s)'] = df['Wind(m/s)'].interpolate(method='time')
     df.reset_index(inplace=True)
-    overtopping_times = df[df['RF1_Final_Predictions'] == 1]['time']
-    send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE") #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
-
-    save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times)
+    return df
 
 
 def plot_significant_wave_height(start_date_block):
