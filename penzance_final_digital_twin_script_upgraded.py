@@ -174,7 +174,7 @@ def extract_wind_data(wind_file):
 # Now extract the wl data (this is the easiest, its in one combined text file)
 def extract_water_level_data():
     water_level = pd.read_csv(
-        wl_file, sep='\s+', header=None, skiprows=2,
+        wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
@@ -184,7 +184,7 @@ def extract_water_level_data():
 
 def extract_hourly_water_level_data():
     water_level = pd.read_csv(
-        wl_file, sep='\s+', header=None, skiprows=2,
+        wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
@@ -619,7 +619,7 @@ def save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_f
 
 def combine_features(df):
     hourly_freeboard = pd.read_csv(
-        wl_file, sep='\s+', header=None, skiprows=2,
+        wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     hourly_freeboard['datetime'] = pd.to_datetime(hourly_freeboard['date'] + ' ' + hourly_freeboard['time'], format='%d/%m/%Y %H:%M')
