@@ -182,13 +182,14 @@ def extract_water_level_data():
     return water_level.resample('3H').interpolate()
 
 
-def extract_hourly_water_level_data():
+def extract_hourly_water_level_data(start_date, end_date):
     water_level = pd.read_csv(
         wl_file, sep='\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
     water_level = water_level.set_index('datetime')[['water_level']]
+    water_level = water_level.loc[start_date:end_date]
     return water_level.asfreq('1H').interpolate()
 
 

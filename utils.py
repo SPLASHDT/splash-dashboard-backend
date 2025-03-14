@@ -36,15 +36,15 @@ def getNumericValue(input_value):
     return int(input_value) if isinstance(input_value, str) else input_value
 
 
-def convert_dataframe_to_list(df, list_var_name, variable_name):
+def convert_dataframe_to_list(df, list_var_name, variable_name, datetime_field_name):
     if isinstance(df, pd.DataFrame):
         data_list = []
         for index, row in df.iterrows():
-            timestamp = row['time']  # Get the Timestamp object
+            timestamp = row[datetime_field_name]  # Get the Timestamp object
             formatted_time = timestamp.strftime("%a, %d %b %Y %H:%M:%S GMT") # Format the Timestamp
             data_list.append({
                 list_var_name: row[variable_name],
-                "time": formatted_time
+                'time': formatted_time
             })
         return data_list
     elif isinstance(df, list): #if already a list return the list
