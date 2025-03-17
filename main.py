@@ -120,10 +120,12 @@ def get_dawlish_significant_wave_height():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
-    ddt.process_wave_overtopping(final_DawlishTwin_dataset)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
 
-    interpolated_DawlishTwin_dataset, overtopping_times_by_feature = ddt.get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, 'Hs')
+    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
+    ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
+
+    interpolated_DawlishTwin_dataset, overtopping_times_by_feature = ddt.get_feature_and_overtopping_times_data(final_DawlishTwin_dataset_adjusted, 'Hs')
     significant_wave_height_list = utils.convert_variable_df_to_list(interpolated_DawlishTwin_dataset, 'significant_wave_height', 'Hs', 'time')
     overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'significant_wave_height', 'Hs', 'overtopping_time')
 
@@ -141,14 +143,16 @@ def get_dawlish_water_level():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
-    ddt.process_wave_overtopping(final_DawlishTwin_dataset)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
 
-    ds_start_date = final_DawlishTwin_dataset['time'].min()
-    ds_end_date = final_DawlishTwin_dataset['time'].max()
+    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
+    ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
+
+    ds_start_date = final_DawlishTwin_dataset_adjusted['time'].min()
+    ds_end_date = final_DawlishTwin_dataset_adjusted['time'].max()
     interpolated_DawlishTwin_dataset = ddt.extract_water_level_for_range(ds_start_date, ds_end_date)
 
-    overtopping_times_by_feature = ddt.get_overtopping_times_data(final_DawlishTwin_dataset, 'Freeboard')
+    overtopping_times_by_feature = ddt.get_overtopping_times_data(final_DawlishTwin_dataset_adjusted, 'Freeboard')
     interpolated_DawlishTwin_dataset = interpolated_DawlishTwin_dataset.reset_index()
     tidal_level_data_list = utils.convert_variable_df_to_list(interpolated_DawlishTwin_dataset, 'tidal_level', 'water_level', 'datetime')
     overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'tidal_level', 'Freeboard', 'overtopping_time')
@@ -167,10 +171,12 @@ def get_dawlish_wind_speed():
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
-    ddt.process_wave_overtopping(final_DawlishTwin_dataset)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
 
-    interpolated_DawlishTwin_dataset, overtopping_times_by_feature = ddt.get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, 'Wind(m/s)')
+    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
+    ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
+
+    interpolated_DawlishTwin_dataset, overtopping_times_by_feature = ddt.get_feature_and_overtopping_times_data(final_DawlishTwin_dataset_adjusted, 'Wind(m/s)')
     tidal_level_data_list = utils.convert_variable_df_to_list(interpolated_DawlishTwin_dataset, 'wind_speed', 'Wind(m/s)', 'time')
     overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'wind_speed', 'Wind(m/s)', 'overtopping_time')
 
@@ -188,12 +194,19 @@ def get_penzance_significant_wave_height():
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
 
-    interpolated_PenzanceTwin_dataset = pdt.interpolate_features_data(final_Penzance_Twin_dataset)
+    pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
+    final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
+    pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
+
+    interpolated_PenzanceTwin_dataset, overtopping_times_by_feature = pdt.get_feature_and_overtopping_times_data(final_Penzance_Twin_dataset_adjusted, 'Hs')
     significant_wave_height_list = utils.convert_variable_df_to_list(interpolated_PenzanceTwin_dataset, 'significant_wave_height', 'Hs', 'time')
+    overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'significant_wave_height', 'Hs', 'overtopping_time')
 
     return jsonify({
-        "significant_wave_heights": significant_wave_height_list
+        "significant_wave_heights": significant_wave_height_list,
+        "overtopping_times": overtopping_times_list
     })
 
 
@@ -205,14 +218,24 @@ def get_penzance_tidal_level():
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
+
+    pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
+    final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
+    pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
+
     ds_start_date = final_Penzance_Twin_dataset['time'].min()
     ds_end_date = final_Penzance_Twin_dataset['time'].max()
     interpolated_PenzanceTwin_dataset = pdt.extract_hourly_water_level_data(ds_start_date, ds_end_date)
+    overtopping_times_by_feature = pdt.get_overtopping_times_data(final_Penzance_Twin_dataset_adjusted, 'Freeboard')
+
     interpolated_PenzanceTwin_dataset = interpolated_PenzanceTwin_dataset.reset_index()
     tidal_level_list = utils.convert_variable_df_to_list(interpolated_PenzanceTwin_dataset, 'tidal_level', 'water_level', 'datetime')
+    overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'tidal_level', 'Freeboard', 'overtopping_time')
 
     return jsonify({
-        "tidal_levels": tidal_level_list
+        "tidal_levels": tidal_level_list,
+        "overtopping_times": overtopping_times_list
     })
 
 
@@ -224,12 +247,20 @@ def get_penzance_wind_speed_level():
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
+    
+    pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
+    final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
+    pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
 
-    interpolated_PenzanceTwin_dataset = pdt.interpolate_features_data(final_Penzance_Twin_dataset)
+
+    interpolated_PenzanceTwin_dataset, overtopping_times_by_feature = pdt.get_feature_and_overtopping_times_data(final_Penzance_Twin_dataset_adjusted, 'Wind(m/s)')
     wind_speed_list = utils.convert_variable_df_to_list(interpolated_PenzanceTwin_dataset, 'wind_speed', 'Wind(m/s)', 'time')
+    overtopping_times_list = utils.convert_variable_df_to_list(overtopping_times_by_feature, 'wind_speed', 'Wind(m/s)', 'overtopping_time')
 
     return jsonify({
-        "wind_speeds": wind_speed_list
+        "wind_speeds": wind_speed_list,
+        "overtopping_times": overtopping_times_list
     })
 
 
