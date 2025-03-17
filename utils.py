@@ -36,7 +36,7 @@ def getNumericValue(input_value):
     return int(input_value) if isinstance(input_value, str) else input_value
 
 
-def convert_dataframe_to_list(df, list_var_name, variable_name, datetime_field_name):
+def convert_variable_df_to_list(df, list_var_name, variable_name, datetime_field_name):
     if isinstance(df, pd.DataFrame):
         data_list = []
         for index, row in df.iterrows():

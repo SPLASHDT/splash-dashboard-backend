@@ -632,14 +632,26 @@ def save_combined_features(final_DawlishTwin_dataset):
     )
 
 
-# Interpolate features wave and atmospheric variables data
-def interpolate_features_data(final_DawlishTwin_dataset):
+# Get overtopping times data
+def get_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
+    overtopping_times_dawlish = final_DawlishTwin_dataset[final_DawlishTwin_dataset['RF1_Final_Predictions'] == 1]['time']
+    overtopping_times= pd.DataFrame()
+
+    overtopping_times_filtered = [time for time in overtopping_times_dawlish if time in final_DawlishTwin_dataset['time'].values]
+    overtopping_times[variable_name] = final_DawlishTwin_dataset[final_DawlishTwin_dataset['time'].isin(overtopping_times_filtered)][variable_name]
+    overtopping_times['overtopping_time'] = overtopping_times_filtered
+    return overtopping_times
+
+# Get features and overtopping times data
+def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
+    overtopping_times_filtered = get_overtopping_times_data(final_DawlishTwin_dataset, variable_name)
+
     block_start_date = final_DawlishTwin_dataset['time'].min()
     block_end_date = final_DawlishTwin_dataset['time'].max()
     
     final_DawlishTwin_dataset = final_DawlishTwin_dataset.set_index('time').reindex(pd.date_range(start=block_start_date, end=block_end_date, freq='1H')).interpolate(method='time').reset_index()
     final_DawlishTwin_dataset.rename(columns={'index': 'time'}, inplace=True)
-    return final_DawlishTwin_dataset
+    return final_DawlishTwin_dataset, overtopping_times_filtered
 
 
 # Function to adjust the number of arrows
