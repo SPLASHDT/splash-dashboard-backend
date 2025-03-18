@@ -21,15 +21,7 @@ app = Flask(__name__)
 @app.route('/splash/dawlish/wave-overtopping', methods=['GET'])
 def get_dawlish_wave_overtopping():
     option = request.args.get('option', 'dawlish') 
-    # Set today's date by default to get current datasets
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
-    sig_wave_height =  utils.getNumericValue(request.args.get('sig_wave_height', 0))
-    freeboard =  utils.getNumericValue(request.args.get('freeboard', 0))
-    mean_wave_period =  utils.getNumericValue(request.args.get('mean_wave_period', 0))
-    mean_wave_dir =  utils.getNumericValue(request.args.get('mean_wave_dir', 0))
-    wind_speed =  utils.getNumericValue(request.args.get('wind_speed', 0))
-    wind_direction =  utils.getNumericValue(request.args.get('wind_direction', 0))
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
@@ -53,15 +45,7 @@ def get_dawlish_wave_overtopping():
 @app.route('/splash/penzance/wave-overtopping', methods=['GET'])
 def get_penzance_wave_overtopping():   
     option = request.args.get('option', 'penzance')
-    # Set today's date by default to get current datasets
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
-    sig_wave_height =  utils.getNumericValue(request.args.get('sig_wave_height', 0))
-    freeboard =  utils.getNumericValue(request.args.get('freeboard', 0))
-    mean_wave_period =  utils.getNumericValue(request.args.get('mean_wave_period', 0))
-    mean_wave_dir =  utils.getNumericValue(request.args.get('mean_wave_dir', 0))
-    wind_speed =  utils.getNumericValue(request.args.get('wind_speed', 0))
-    wind_direction =  utils.getNumericValue(request.args.get('wind_direction', 0))
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)

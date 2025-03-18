@@ -1,6 +1,9 @@
 import os 
 from dotenv import load_dotenv
 import pandas as pd
+from flask import request
+from datetime import datetime
+import utils
 
 def loadConfigFile():
     environment = os.getenv("SPLASH_ENV")
@@ -44,3 +47,15 @@ def convert_df_to_json_data(original_df):
     else:
         json_data = []
     return json_data
+
+
+def get_query_params_values(start_date_name, sig_wave_height_name, freeboard_name, mean_wave_period_name, mean_wave_dir_name, wind_speed_name, wind_direction_name):
+    start_date = request.args.get(start_date_name, datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    sig_wave_height =  utils.getNumericValue(request.args.get(sig_wave_height_name, 0))
+    freeboard =  utils.getNumericValue(request.args.get(freeboard_name, 0))
+    mean_wave_period =  utils.getNumericValue(request.args.get(mean_wave_period_name, 0))
+    mean_wave_dir =  utils.getNumericValue(request.args.get(mean_wave_dir_name, 0))
+    wind_speed =  utils.getNumericValue(request.args.get(wind_speed_name, 0))
+    wind_direction =  utils.getNumericValue(request.args.get(wind_direction_name, 0))
+    return date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction 
