@@ -36,31 +36,14 @@ def get_dawlish_wave_overtopping():
     final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
 
-    tmp_seawall_crest_overtopping, tmp_railway_line_overtopping = ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
-
-    def convert_dataframe_to_list(df):
-        if isinstance(df, pd.DataFrame):
-            data_list = []
-            for index, row in df.iterrows():
-                timestamp = row['Time']  # Get the Timestamp object
-                formatted_time = timestamp.strftime("%a, %d %b %Y %H:%M:%S GMT") # Format the Timestamp
-                data_list.append({
-                    "confidence": row['Confidence'],
-                    "overtopping_count": row['Overtopping Count'],
-                    "time": formatted_time
-                })
-            return data_list
-        elif isinstance(df, list): #if already a list return the list
-            return df
-        else:
-            return []
-
-    seawall_crest_overtopping = convert_dataframe_to_list(tmp_seawall_crest_overtopping)
-    railway_line_overtopping = convert_dataframe_to_list(tmp_railway_line_overtopping)
+    seawall_crest_overtopping_df, railway_line_overtopping_df = ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
+    seawall_crest_overtopping = utils.convert_df_to_json_data(seawall_crest_overtopping_df)
+    railway_line_overtopping = utils.convert_df_to_json_data(railway_line_overtopping_df)
+ 
 
     return jsonify({
-        "seawall_crest_overtopping": seawall_crest_overtopping,
-        "railway_line_overtopping": railway_line_overtopping
+        "seawall_crest_overtopping": eval(seawall_crest_overtopping),
+        "railway_line_overtopping": eval(railway_line_overtopping)
     })
 
 
@@ -83,32 +66,14 @@ def get_penzance_wave_overtopping():
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
 
-    tmp_seawall_crest_overtopping, tmp_seawall_crest_sheltered_overtopping = pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
-
-    def convert_dataframe_to_list(df):
-        if isinstance(df, pd.DataFrame):
-            data_list = []
-            for index, row in df.iterrows():
-                timestamp = row['Time']  # Get the Timestamp object
-                formatted_time = timestamp.strftime("%a, %d %b %Y %H:%M:%S GMT") # Format the Timestamp
-                data_list.append({
-                    "confidence": row['Confidence'],
-                    "overtopping_count": row['Overtopping Count'],
-                    "time": formatted_time
-                })
-            return data_list
-        elif isinstance(df, list): #if already a list return the list
-            return df
-        else:
-            return []
-        
-    seawall_crest_overtopping = convert_dataframe_to_list(tmp_seawall_crest_overtopping)
-    seawall_crest_sheltered_overtopping = convert_dataframe_to_list(tmp_seawall_crest_sheltered_overtopping)
+    seawall_crest_overtopping_df, seawall_crest_sheltered_overtopping_df = pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)       
+    seawall_crest_overtopping = utils.convert_df_to_json_data(seawall_crest_overtopping_df)
+    seawall_crest_sheltered_overtopping = utils.convert_df_to_json_data(seawall_crest_sheltered_overtopping_df)
 
     # Return the data as a JSON response
     return jsonify({
-        "seawall_crest_overtopping": seawall_crest_overtopping,
-        "seawall_crest_sheltered_overtopping": seawall_crest_sheltered_overtopping
+        "seawall_crest_overtopping": eval(seawall_crest_overtopping),
+        "seawall_crest_sheltered_overtopping": eval(seawall_crest_sheltered_overtopping)
     })
 
 

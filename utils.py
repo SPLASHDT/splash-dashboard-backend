@@ -36,6 +36,13 @@ def getNumericValue(input_value):
     return int(input_value) if isinstance(input_value, str) else input_value
 
 
+def convert_df_to_json_data(overtopping_df):
+    overtopping_df = overtopping_df.rename(columns={'Confidence': 'confidence', 'Overtopping Count': 'overtopping_count'})
+    overtopping_df['time'] = overtopping_df.apply(lambda row: row.Time.strftime("%a, %d %b %Y %H:%M:%S GMT"), axis=1)
+    overtopping_df = overtopping_df.drop(['Time'], axis=1)
+    json_data = overtopping_df.to_json(orient='records')
+    return json_data
+
 def convert_variable_df_to_list(df, list_var_name, variable_name, datetime_field_name):
     if isinstance(df, pd.DataFrame):
         data_list = []
