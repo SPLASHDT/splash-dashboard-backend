@@ -182,13 +182,14 @@ def extract_water_level_data():
     return water_level.resample('3H').interpolate()
 
 
-def extract_hourly_water_level_data():
+def extract_hourly_water_level_data(start_date, end_date):
     water_level = pd.read_csv(
         wl_file, sep=r'\s+', header=None, skiprows=2,
         names=['date', 'time', 'water_level'], engine='python'
     )
     water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
     water_level = water_level.set_index('datetime')[['water_level']]
+    water_level = water_level.loc[start_date:end_date]
     return water_level.asfreq('1H').interpolate()
 
 
@@ -627,21 +628,32 @@ def combine_features(df):
     date_range = pd.date_range(start=df['time'].min(), end=df['time'].max(), freq='1h')
     hourly_freeboard = hourly_freeboard.reindex(date_range).interpolate(method='time').reset_index()
     hourly_freeboard.rename(columns={'index': 'datetime'}, inplace=True)
-    df = interpolate_features_data(df)
+    df = get_feature_and_overtopping_times_data(df)
     overtopping_times = df[df['RF1_Final_Predictions'] == 1]['time']
     send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE") #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
 
     save_combined_features_plot(df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times)
 
+# Get overtopping times data
+def get_overtopping_times_data(final_PenzanceTwin_dataset, variable_name):
+    overtopping_times_penzance = final_PenzanceTwin_dataset[final_PenzanceTwin_dataset['RF1_Final_Predictions'] == 1]['time']
+    overtopping_times= pd.DataFrame()
+
+    overtopping_times_filtered = [time for time in overtopping_times_penzance if time in final_PenzanceTwin_dataset['time'].values]
+    overtopping_times[variable_name] = final_PenzanceTwin_dataset[final_PenzanceTwin_dataset['time'].isin(overtopping_times_filtered)][variable_name]
+    overtopping_times['overtopping_time'] = overtopping_times_filtered
+    return overtopping_times
 
 # Interpolate features data
-def interpolate_features_data(df):
-    df['time'] = pd.to_datetime(df['time'])
-    df.set_index('time', inplace=True)
-    df['Hs'] = df['Hs'].interpolate(method='time')
-    df['Wind(m/s)'] = df['Wind(m/s)'].interpolate(method='time')
-    df.reset_index(inplace=True)
-    return df
+def get_feature_and_overtopping_times_data(final_PenzanceTwin_dataset, variable_name):
+    overtopping_times_filtered = get_overtopping_times_data(final_PenzanceTwin_dataset, variable_name)
+
+    final_PenzanceTwin_dataset['time'] = pd.to_datetime(final_PenzanceTwin_dataset['time'])
+    final_PenzanceTwin_dataset.set_index('time', inplace=True)
+    final_PenzanceTwin_dataset['Hs'] = final_PenzanceTwin_dataset['Hs'].interpolate(method='time')
+    final_PenzanceTwin_dataset['Wind(m/s)'] = final_PenzanceTwin_dataset['Wind(m/s)'].interpolate(method='time')
+    final_PenzanceTwin_dataset.reset_index(inplace=True)
+    return final_PenzanceTwin_dataset, overtopping_times_filtered
 
 
 def plot_significant_wave_height(start_date_block):
