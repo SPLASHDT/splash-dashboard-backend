@@ -4,6 +4,7 @@ import pandas as pd
 from flask import request
 from datetime import datetime
 import utils
+import json
 
 def loadConfigFile():
     environment = os.getenv("SPLASH_ENV")
@@ -43,7 +44,8 @@ def convert_df_to_json_data(original_df):
     if not original_df.empty:
         original_df['time'] = original_df.apply(lambda row: row.Time.strftime("%a, %d %b %Y %H:%M:%S GMT"), axis=1)
         original_df = original_df.drop(['Time'], axis=1)
-        json_data = eval(original_df.to_json(orient='records'))
+        original_json_data = original_df.to_json(orient='records')
+        json_data = json.loads(original_json_data)
     else:
         json_data = []
     return json_data
