@@ -253,4 +253,4 @@ if __name__ == '__main__':
     if os.environ.get("SPLASH_ENV")=="docker":
         app.run(debug=DEBUG, host="0.0.0.0", port=8080)
     else:
-        app.run(debug=DEBUG, port=8080)
+        app.run(debug=DEBUG, port=8090)
