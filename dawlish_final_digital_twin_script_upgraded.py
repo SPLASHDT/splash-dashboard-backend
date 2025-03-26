@@ -662,6 +662,110 @@ def adjust_arrow_density(latitudes, longitudes, density_factor=12):
     )
 
 
+def generate_significant_wave_height():
+    # Step 11: Plot Hs geospatially and save to the figures folder
+    # send_here_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
+    send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
+    # output_folder = '/content/drive/MyDrive/splash/data_outputs/dawlish/waves'
+    output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
+    # state_file = '/content/drive/MyDrive/last_processed_block.txt'
+    state_file = os.environ.get("STATE_FILE_FOLDER")
+
+    results = []
+
+    current_block_Met_office_final = datetime.now().strftime('%Y%m%d')
+    print(f"Processing Block: {current_block_Met_office_final}")
+
+    block_files = sorted(
+        [os.path.join(send_here_wave_folder, f) for f in os.listdir(send_here_wave_folder) if f.endswith('.nc') and f'b{current_block_Met_office_final}' in f]
+    )
+
+    if not block_files:
+        print(f"No files found for Block {current_block_Met_office_final}. Falling back to the previous day's block.")
+        current_block_Met_office_final = (datetime.strptime(current_block_Met_office_final, '%Y%m%d') - timedelta(days=1)).strftime('%Y%m%d')
+        block_files = sorted(
+            [os.path.join(send_here_wave_folder, f) for f in os.listdir(send_here_wave_folder) if f.endswith('.nc') and f'b{current_block_Met_office_final}' in f]
+        )
+        print(f"Retrying with Block: {current_block_Met_office_final}")
+
+    if block_files:
+        hs_list = []
+        time_list = []
+
+        for file in block_files:
+            ds = xr.open_dataset(file)
+            hs = ds[['VHM0', 'VMDR']]  
+            times = ds['time'].values
+            hs_list.append(hs)
+            time_list.extend(times)
+
+        if hs_list:
+            hs_combined_for_Dawlish_study_site = xr.concat(hs_list, dim='time')
+            time_combined = np.array(time_list)
+
+            # Coordinates (Southwest England)
+            lat_bound_Dawlish_Seawall = [49.5, 51.5]
+            lon_bounds_Dawlish_Seawall = [-6.0, -2.0]
+            hs_combined_for_Dawlish_study_site['longitude'] = xr.where(
+                hs_combined_for_Dawlish_study_site['longitude'] > 180,
+                hs_combined_for_Dawlish_study_site['longitude'] - 360,
+                hs_combined_for_Dawlish_study_site['longitude']
+            )
+            hs_southwest = hs_combined_for_Dawlish_study_site.sel(
+                latitude=slice(lat_bound_Dawlish_Seawall[0], lat_bound_Dawlish_Seawall[1]),
+                longitude=slice(lon_bounds_Dawlish_Seawall[0], lon_bounds_Dawlish_Seawall[1])
+            )
+
+            dawlish_lat_seawall = 50.56757
+            dawlish_lon_seawall = -3.42424
+            penzance_lat_seawall = 50.1186
+            penzance_lon_seawall = -5.5373
+
+            for time_idx, time_value in enumerate(time_combined):
+                if time_idx % 6 == 0: 
+                    hs_frame_digital_twin = hs_southwest.sel(time=time_value)
+
+                    time_label = pd.Timestamp(time_value).strftime('%Y-%m-%d %H:%M:%S')
+                    # plt.figure(figsize=(10, 8))
+
+                    z_data = hs_frame_digital_twin['VHM0'].squeeze().values
+                    if z_data.ndim > 2:
+                        z_data = z_data[0]
+
+                    wave_dir_frame = hs_frame_digital_twin['VMDR']
+                    wave_dir = wave_dir_frame.values
+
+                    longitudes = hs_frame_digital_twin['longitude'].values
+                    latitudes = hs_frame_digital_twin['latitude'].values
+                    lon_grid, lat_grid = np.meshgrid(longitudes, latitudes)
+
+                    U = -np.sin(np.deg2rad(wave_dir))
+                    V = -np.cos(np.deg2rad(wave_dir))
+
+                    land_margin_mask = ~np.isnan(z_data) & (z_data > 0.2)
+                    U = np.where(land_margin_mask, U, np.nan)
+                    V = np.where(land_margin_mask, V, np.nan)
+
+                    skip = adjust_arrow_density(latitudes, longitudes, density_factor=12)
+                    
+                    # Create a dictionary for each record
+                    record = {
+                        "latitudes": latitudes.tolist(),
+                        "longitudes": longitudes.tolist(),
+                        "z_data": z_data.tolist(),
+                        "U": U.tolist(),
+                        "V": V.tolist(),
+                        "lon_grid": lon_grid.tolist(),
+                        "lat_grid": lat_grid.tolist(),
+                        # "skip": int(skip),
+                        "current_block_Met_office_final": current_block_Met_office_final,
+                        "time_label": time_label
+                    }
+                    results.append(record)
+ 
+    return results
+
+
 def plot_significant_wave_height():
     # Step 11: Plot Hs geospatially and save to the figures folder
     # send_here_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'

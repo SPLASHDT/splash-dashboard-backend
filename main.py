@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import utils
+import json
 
 
 utils.loadConfigFile()
@@ -243,6 +244,22 @@ def get_penzance_wind_speed_level():
         "wind_speeds": wind_speed_data,
         "overtopping_times": overtopping_times
     })
+
+
+@app.route('/splash/dawlish/significant-wave-height/spatial-data', methods=['GET'])
+def get_dawlish_swh_spatial_data():
+    option = request.args.get('option', 'dawlish') 
+    start_date = request.args.get('start_date', datetime.now().date())
+    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+
+    ddt.setInputFolderPaths(option)
+    final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
+
+    ddt.load_models(SPLASH_DT_Dawlish_models_folder)
+    results = ddt.generate_significant_wave_height()
+    return json.dumps(results, indent=4)
+
 
 
 if __name__ == '__main__':
