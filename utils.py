@@ -63,3 +63,5 @@ def get_query_params_values(start_date_name, sig_wave_height_name, freeboard_nam
     wind_speed =  utils.getNumericValue(request.args.get(wind_speed_name, 0))
     wind_direction =  utils.getNumericValue(request.args.get(wind_direction_name, 0))
     return date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction 
+
+
