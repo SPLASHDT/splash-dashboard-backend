@@ -154,12 +154,11 @@ def get_dawlish_wind_speed():
 @app.route('/splash/penzance/significant-wave-height', methods=['GET'])
 def get_penzance_significant_wave_height():
     option = request.args.get('option', 'penzance') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
-    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
 
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
@@ -183,25 +182,24 @@ def get_penzance_significant_wave_height():
 @app.route('/splash/penzance/tidal-level', methods=['GET'])
 def get_penzance_tidal_level():
     option = request.args.get('option', 'penzance') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
-    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
 
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)
     pdt.process_wave_overtopping(final_Penzance_Twin_dataset_adjusted, start_time)
 
-    ds_start_date = final_Penzance_Twin_dataset['time'].min()
-    ds_end_date = final_Penzance_Twin_dataset['time'].max()
-    interpolated_PenzanceTwin_dataset = pdt.extract_hourly_water_level_data(ds_start_date, ds_end_date)
+    ds_start_date = final_Penzance_Twin_dataset_adjusted['time'].min()
+    ds_end_date = final_Penzance_Twin_dataset_adjusted['time'].max()
+    all_vars_with_initial_values = utils.all_variables_with_initial_values(sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
+    interpolated_PenzanceTwin_dataset = pdt.extract_hourly_water_level_data(final_Penzance_Twin_dataset_adjusted, ds_start_date, ds_end_date, all_vars_with_initial_values)
     overtopping_times_by_feature_df = pdt.get_overtopping_times_data(final_Penzance_Twin_dataset_adjusted, 'Freeboard')
     interpolated_PenzanceTwin_dataset = interpolated_PenzanceTwin_dataset.reset_index()
 
     overtopping_times_by_feature_df = overtopping_times_by_feature_df.rename(columns={'Freeboard': 'tidal_level', 'overtopping_time': 'Time'})
-    interpolated_PenzanceTwin_dataset = interpolated_PenzanceTwin_dataset.rename(columns={'datetime': 'Time', 'water_level': 'tidal_level'})
 
     tidal_level_data = utils.convert_df_to_json_data(interpolated_PenzanceTwin_dataset)
     overtopping_times = utils.convert_df_to_json_data(overtopping_times_by_feature_df)
@@ -215,12 +213,11 @@ def get_penzance_tidal_level():
 @app.route('/splash/penzance/wind-speed', methods=['GET'])
 def get_penzance_wind_speed_level():
     option = request.args.get('option', 'penzance') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     pdt.setInputFolderPaths(option)
     final_Penzance_Twin_dataset, start_time, start_date_block = pdt.get_digital_twin_dataset(date_object)
-    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, 0, 0, 0, 0, 0, 0)
+    final_Penzance_Twin_dataset_adjusted = pdt.adjust_overtopping_features(final_Penzance_Twin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
     
     pdt.load_model_files(SPLASH_DT_Penzance_models_folder)
     final_Penzance_Twin_dataset_adjusted = pdt.add_selected_model_col(final_Penzance_Twin_dataset_adjusted, start_time)

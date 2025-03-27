@@ -182,13 +182,21 @@ def extract_water_level_data():
     return water_level.resample('3H').interpolate()
 
 
-def extract_hourly_water_level_data(start_date, end_date):
-    water_level = pd.read_csv(
-        wl_file, sep=r'\s+', header=None, skiprows=2,
-        names=['date', 'time', 'water_level'], engine='python'
-    )
-    water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
-    water_level = water_level.set_index('datetime')[['water_level']]
+def extract_hourly_water_level_data(water_level_df, start_date, end_date, all_variables_with_initial_values):
+    if all_variables_with_initial_values:
+        water_level = pd.read_csv(
+            wl_file, sep=r'\s+', header=None, skiprows=2,
+            names=['date', 'time', 'water_level'], engine='python'
+        )
+        water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
+        water_level = water_level.rename(columns={'datetime': 'Time', 'water_level': 'tidal_level'})
+        water_level = water_level.set_index('Time')[['tidal_level']]
+    else:
+        water_level = water_level_df.rename(columns={'Freeboard': 'tidal_level', 'time': 'Time'})
+        water_level = water_level.drop(['Hs', 'RF1_Final_Predictions', 'Selected_Model', 'Tm', 'Wind Direction_dir', 
+                                                                                  'Wind Speed_wind', 'Wind(m/s)', 'shoreWaveDir', 'shoreWindDir', 'water_level_wl'], axis=1)
+        water_level = water_level.set_index('Time')
+
     water_level = water_level.loc[start_date:end_date]
     return water_level.asfreq('1H').interpolate()
 
