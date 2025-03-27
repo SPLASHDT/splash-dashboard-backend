@@ -71,12 +71,11 @@ def get_penzance_wave_overtopping():
 @app.route('/splash/dawlish/significant-wave-height', methods=['GET'])
 def get_dawlish_significant_wave_height():
     option = request.args.get('option', 'dawlish') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
 
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
     ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
@@ -99,25 +98,23 @@ def get_dawlish_significant_wave_height():
 @app.route('/splash/dawlish/tidal-level', methods=['GET'])
 def get_dawlish_water_level():
     option = request.args.get('option', 'dawlish') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
 
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
     ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
 
     ds_start_date = final_DawlishTwin_dataset_adjusted['time'].min()
     ds_end_date = final_DawlishTwin_dataset_adjusted['time'].max()
-    interpolated_DawlishTwin_dataset = ddt.extract_water_level_for_range(ds_start_date, ds_end_date)
+
+    all_vars_with_initial_values = utils.all_variables_with_initial_values(sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
+    interpolated_DawlishTwin_dataset = ddt.extract_water_level_for_range(final_DawlishTwin_dataset_adjusted, ds_start_date, ds_end_date, all_vars_with_initial_values)
     overtopping_times_by_feature_df = ddt.get_overtopping_times_data(final_DawlishTwin_dataset_adjusted, 'Freeboard')
     interpolated_DawlishTwin_dataset = interpolated_DawlishTwin_dataset.reset_index()
-
     overtopping_times_by_feature_df = overtopping_times_by_feature_df.rename(columns={'Freeboard': 'tidal_level', 'overtopping_time': 'Time'})
-    interpolated_DawlishTwin_dataset = interpolated_DawlishTwin_dataset.rename(columns={'datetime': 'Time', 'water_level': 'tidal_level'})
-    interpolated_DawlishTwin_dataset = interpolated_DawlishTwin_dataset.drop(['date', 'time'], axis=1)
     
     tidal_level_data = utils.convert_df_to_json_data(interpolated_DawlishTwin_dataset)
     overtopping_times = utils.convert_df_to_json_data(overtopping_times_by_feature_df)
@@ -131,12 +128,11 @@ def get_dawlish_water_level():
 @app.route('/splash/dawlish/wind-speed', methods=['GET'])
 def get_dawlish_wind_speed():
     option = request.args.get('option', 'dawlish') 
-    start_date = request.args.get('start_date', datetime.now().date())
-    date_object = datetime.strptime(start_date, "%d-%m-%Y").date() if isinstance(start_date, str) else start_date
+    date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction  = utils.get_query_params_values('start_date', 'sig_wave_height', 'freeboard', 'mean_wave_period', 'mean_wave_dir', 'wind_speed', 'wind_direction')
 
     ddt.setInputFolderPaths(option)
     final_DawlishTwin_dataset = ddt.get_digital_twin_dataset(date_object)
-    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, 0, 0, 0, 0, 0, 0)
+    final_DawlishTwin_dataset_adjusted = ddt.adjust_overtopping_features(final_DawlishTwin_dataset, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction)
 
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
     ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)

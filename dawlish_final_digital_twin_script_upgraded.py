@@ -181,18 +181,26 @@ def extract_water_level_data():
     return water_level.resample('3H').interpolate()
 
 
-def extract_water_level_for_range(start_date, end_date):
+def extract_water_level_for_range(water_level_df, start_date, end_date, all_variables_with_initial_values):
     # Load the water level data from the text file
-    water_level = pd.read_csv(
-        wl_file, sep=r'\s+', header=None, skiprows=2,
-        names=['date', 'time', 'water_level'], engine='python'
-    )
-    # Combine date and time columns and convert to datetime
-    water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
-    water_level = water_level.set_index('datetime')
+    if all_variables_with_initial_values:
+        water_level = pd.read_csv(
+            wl_file, sep=r'\s+', header=None, skiprows=2,
+            names=['date', 'time', 'water_level'], engine='python'
+        )
+        # Combine date and time columns and convert to datetime
+        water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
+        water_level = water_level.rename(columns={'datetime': 'Time', 'water_level': 'tidal_level'})
+        water_level = water_level.set_index('Time')
+        water_level = water_level.drop(['date'], axis=1)
+    else:
+        water_level = water_level_df.rename(columns={'Freeboard': 'tidal_level', 'time': 'Time'})
+        water_level = water_level.drop(['Hs', 'RF1_Confidence', 'RF1_Final_Predictions', 'RF2_Overtopping_Count', 'RF3_Confidence', 
+                                                                                  'RF3_Final_Predictions', 'Tm', 'Wind(m/s)', 'shoreWaveDir', 'shoreWindDir'], axis=1)
+        water_level = water_level.set_index('Time')
 
     # Filter for the specified date range and resample to hourly
-    water_level_filtered = water_level.loc[start_date:end_date]
+    water_level_filtered = water_level.loc[start_date:end_date]    
     return water_level_filtered.resample('1H').interpolate()
 
 
@@ -644,6 +652,15 @@ def get_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
 
 # Get features and overtopping times data
 def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
+
+    # # Combine date and time columns and convert to datetime
+    # water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
+    # water_level = water_level.set_index('datetime')
+
+    # # Filter for the specified date range and resample to hourly
+    # water_level_filtered = water_level.loc[start_date:end_date]
+    # return water_level_filtered.resample('1H').interpolate()
+
     overtopping_times_filtered = get_overtopping_times_data(final_DawlishTwin_dataset, variable_name)
 
     block_start_date = final_DawlishTwin_dataset['time'].min()

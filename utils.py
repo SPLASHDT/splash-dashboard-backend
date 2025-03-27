@@ -65,3 +65,7 @@ def get_query_params_values(start_date_name, sig_wave_height_name, freeboard_nam
     return date_object, sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction 
 
 
+def all_variables_with_initial_values(sig_wave_height, freeboard, mean_wave_period, mean_wave_dir, wind_speed, wind_direction):
+    return sig_wave_height == 0 and freeboard == 0 and mean_wave_period == 0 and mean_wave_dir == 0 and wind_speed == 0 and wind_direction == 0
+
+
