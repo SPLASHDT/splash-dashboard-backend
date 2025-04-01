@@ -24,7 +24,6 @@ import joblib
 from IPython.display import display, clear_output
 import matplotlib.lines as mlines
 
-# import shap
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib.ticker as ticker
@@ -38,26 +37,20 @@ from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-# from google.colab import drive
 import seaborn as sns
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 import os
 import utils
 
-# Connect to google drive, as this was origionally done on google colab
-# drive.mount('/content/drive')
 
 utils.loadConfigFile()
 
 # Step 2: Extract data from our files
 
 # this is our 3 main folder file paths: wave, wind and wl (water level), we must extract data and concatenate from this these path folders.
-# Met_office_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
 Met_office_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
-# Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
 Met_office_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER")
-# wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
 wl_file = os.environ.get("WATER_LEVEL_FILE")
 state_file = os.environ.get(
     "STATE_FILE"
@@ -69,10 +62,9 @@ Dawlish_Wave_Buoy_LONGITUDE = float(os.environ.get("DAWLISH_WAVE_BUOY_LONGITUDE"
 
 # Step 4: Now we load our SPLASH models
 
-# SPLASH_DIGITAL_TWIN_models_folder = '/content/drive/MyDrive/splash/data_inputs/models/dawlish' # Locate to the Dawlish forlder, this is the same for Penzance but just for the Penzance folder.
 SPLASH_DIGITAL_TWIN_models_folder = os.environ.get(
     "DAWLISH_MODELS_FOLDER"
-)  # Locate to the Dawlish forlder, this is the same for Penzance but just for the Penzance folder.
+)
 
 machine_learning_models = {"RF1": {}, "RF2": {}, "RF3": {}, "RF4": {"Regressor": {}}}
 
@@ -156,9 +148,7 @@ def setInputFolderPaths(option: str = "dawlish"):
         penzance_water_level_file,
     ) = utils.getLocationDataPaths(option)
     Met_office_wave_folder = met_office_wave_folder
-    # Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
     Met_office_wind_folder = met_office_wind_folder
-    # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
     wl_file = water_level_file
 
 
@@ -981,7 +971,6 @@ def save_penazance_combined_features_plot_with_overtopping(
 
 
 def save_combined_features(final_DawlishTwin_dataset):
-    # use_this_output_path_dawlish = '/content/drive/MyDrive/splash/data_outputs/dawlish/all_plots/dawlish_combined_features.png'
     use_this_output_path_dawlish = os.environ.get("OUTPUT_PATH_DAWLISH")
     overtopping_times_dawlish = final_DawlishTwin_dataset[
         final_DawlishTwin_dataset["RF1_Final_Predictions"] == 1
@@ -1020,14 +1009,6 @@ def get_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
 # Get features and overtopping times data
 def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
 
-    # # Combine date and time columns and convert to datetime
-    # water_level['datetime'] = pd.to_datetime(water_level['date'] + ' ' + water_level['time'], format='%d/%m/%Y %H:%M')
-    # water_level = water_level.set_index('datetime')
-
-    # # Filter for the specified date range and resample to hourly
-    # water_level_filtered = water_level.loc[start_date:end_date]
-    # return water_level_filtered.resample('1H').interpolate()
-
     overtopping_times_filtered = get_overtopping_times_data(
         final_DawlishTwin_dataset, variable_name
     )
@@ -1055,12 +1036,7 @@ def adjust_arrow_density(latitudes, longitudes, density_factor=12):
 
 def generate_significant_wave_height():
     # Step 11: Plot Hs geospatially and save to the figures folder
-    # send_here_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
     send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
-    # output_folder = '/content/drive/MyDrive/splash/data_outputs/dawlish/waves'
-    output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
-    # state_file = '/content/drive/MyDrive/last_processed_block.txt'
-    state_file = os.environ.get("STATE_FILE_FOLDER")
 
     results = []
 
@@ -1124,11 +1100,6 @@ def generate_significant_wave_height():
                 ),
             )
 
-            dawlish_lat_seawall = 50.56757
-            dawlish_lon_seawall = -3.42424
-            penzance_lat_seawall = 50.1186
-            penzance_lon_seawall = -5.5373
-
             for time_idx, time_value in enumerate(time_combined):
                 if time_idx % 6 == 0:
                     hs_frame_digital_twin = hs_southwest.sel(time=time_value)
@@ -1178,11 +1149,8 @@ def generate_significant_wave_height():
 
 def plot_significant_wave_height():
     # Step 11: Plot Hs geospatially and save to the figures folder
-    # send_here_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
     send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
-    # output_folder = '/content/drive/MyDrive/splash/data_outputs/dawlish/waves'
     output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
-    # state_file = '/content/drive/MyDrive/last_processed_block.txt'
     state_file = os.environ.get("STATE_FILE_FOLDER")
 
     current_block_Met_office_final = datetime.now().strftime("%Y%m%d")

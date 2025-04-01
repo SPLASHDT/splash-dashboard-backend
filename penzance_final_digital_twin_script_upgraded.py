@@ -18,10 +18,8 @@
 
 # Step 1: Import necessary libraries
 
-# !pip install pygrib
 import pygrib
 
-# from google.colab import drive
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 from datetime import datetime, timedelta
@@ -29,7 +27,6 @@ import joblib
 from IPython.display import display, clear_output
 import matplotlib.lines as mlines
 
-# import shap
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib.ticker as ticker
@@ -44,9 +41,6 @@ import os
 from dotenv import load_dotenv
 import utils
 
-# Mount Google Drive # only for google colab environment
-# drive.mount('/content/drive')
-
 
 utils.loadConfigFile()
 # Step 2: Downloading and concatenating our dataset.
@@ -55,29 +49,26 @@ utils.loadConfigFile()
 # SPLASH_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
 SPLASH_wave_folder = os.environ.get(
     "MET_OFFICE_WAVE_FOLDER"
-)  #'./other_assets/data_inputs/wave_level/Jan25/'
-# SPLASH_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
+)
 SPLASH_wind_folder = os.environ.get(
     "MET_OFFICE_WIND_FOLDER"
-)  #'./other_assets/data_inputs/wind/Jan25/'
-# wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/NEWLYN Jan 22 to Dec 26.txt'
+)
 wl_file = os.environ.get(
     "PENZANCE_WATER_LEVEL_FILE"
-)  #'./other_assets/data_inputs/water_level/Jan25/NEWLYN Jan 22 to Dec 26.txt'
-state_file = os.environ.get("STATE_FILE")  #'last_processed_block.txt'
+)
+state_file = os.environ.get("STATE_FILE")
 
 # We must extract from the lat/long coordinates for Penzance wave buoy.
 Penzance_wave_buoy_LATITUDE = float(
     os.environ.get("PENZANCE_WAVE_BUOY_LATITUDE")
-)  # 50.10811
+)
 Penzance_wave_buoy_LONGITUDE = float(
     os.environ.get("PENZANCE_WAVE_BUOY_LONGITUDE")
-)  # -5.51515
+)
 
-# SPLASH_Digital_Twin_models_folder = '/content/drive/MyDrive/splash/data_inputs/models/penzance'
 SPLASH_Digital_Twin_models_folder = os.environ.get(
     "PENZANCE_MODELS_FOLDER"
-)  #'./other_assets/data_inputs/models/penzance'
+)
 
 models = {"RF1": {}, "RF2": {}, "RF3": {}, "RF4": {"Regressor": {}}}
 
@@ -158,9 +149,7 @@ def setInputFolderPaths(option: str = "penzance"):
         penzance_water_level_file,
     ) = utils.getLocationDataPaths(option)
     SPLASH_wave_folder = met_office_wave_folder
-    # Met_office_wind_folder = '/content/drive/MyDrive/splash/data_inputs/wind'
     SPLASH_wind_folder = met_office_wind_folder
-    # wl_file = '/content/drive/MyDrive/splash/data_inputs/wl/EXMOUTH Jan 22 to Dec 26.txt'
     wl_file = penzance_water_level_file
 
 
@@ -984,7 +973,7 @@ def combine_features(df):
     overtopping_times = df[df["RF1_Final_Predictions"] == 1]["time"]
     send_to_this_output_path_folder = os.environ.get(
         "OUTPUT_PATH_PENZANCE"
-    )  #'./other_assets/data_outputs/penzance/all_plots/combined_features.png'
+    )
 
     save_combined_features_plot(
         df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times
@@ -1035,13 +1024,10 @@ def plot_significant_wave_height(start_date_block):
 
     send_here_wave_folder = os.environ.get(
         "MET_OFFICE_WAVE_FOLDER"
-    )  #'./other_assets/data_inputs/wave_level/Jan25'
+    )
     output_folder = os.environ.get(
         "PENZANCE_OUTPUT_WAVES_FOLDER"
-    )  #'./other_assets/data_outputs/penzance/waves'
-    state_file = os.environ.get(
-        "STATE_FILE_FOLDER"
-    )  #'./other_assets/last_processed_block.txt'
+    )
 
     current_block = start_date_block.strftime("%Y%m%d")
     print(f"Processing Block: {current_block}")
