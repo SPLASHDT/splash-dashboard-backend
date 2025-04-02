@@ -46,28 +46,16 @@ utils.loadConfigFile()
 # Step 2: Downloading and concatenating our dataset.
 
 # We extract from thee file paths (wave, wind, water level(wl)). NB: we have a state file so if we do not have the proceeding data we proceed using the nearest time.
-SPLASH_wave_folder = os.environ.get(
-    "MET_OFFICE_WAVE_FOLDER"
-)
-SPLASH_wind_folder = os.environ.get(
-    "MET_OFFICE_WIND_FOLDER"
-)
-wl_file = os.environ.get(
-    "PENZANCE_WATER_LEVEL_FILE"
-)
+SPLASH_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
+SPLASH_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER")
+wl_file = os.environ.get("PENZANCE_WATER_LEVEL_FILE")
 state_file = os.environ.get("STATE_FILE")
 
 # We must extract from the lat/long coordinates for Penzance wave buoy.
-Penzance_wave_buoy_LATITUDE = float(
-    os.environ.get("PENZANCE_WAVE_BUOY_LATITUDE")
-)
-Penzance_wave_buoy_LONGITUDE = float(
-    os.environ.get("PENZANCE_WAVE_BUOY_LONGITUDE")
-)
+Penzance_wave_buoy_LATITUDE = float(os.environ.get("PENZANCE_WAVE_BUOY_LATITUDE"))
+Penzance_wave_buoy_LONGITUDE = float(os.environ.get("PENZANCE_WAVE_BUOY_LONGITUDE"))
 
-SPLASH_Digital_Twin_models_folder = os.environ.get(
-    "PENZANCE_MODELS_FOLDER"
-)
+SPLASH_Digital_Twin_models_folder = os.environ.get("PENZANCE_MODELS_FOLDER")
 
 models = {"RF1": {}, "RF2": {}, "RF3": {}, "RF4": {"Regressor": {}}}
 
@@ -455,7 +443,7 @@ def get_next_block(block_date):
         block_date (Date): Forecast date
 
     Returns:
-        Date: Today's date or last block's date or 
+        Date: Today's date or last block's date
     """
 
     today_date = block_date
@@ -1188,9 +1176,7 @@ def combine_features(df):
     hourly_freeboard.rename(columns={"index": "datetime"}, inplace=True)
     df = get_interpolated_feature_data(df)
     overtopping_times = df[df["RF1_Final_Predictions"] == 1]["time"]
-    send_to_this_output_path_folder = os.environ.get(
-        "OUTPUT_PATH_PENZANCE"
-    )
+    send_to_this_output_path_folder = os.environ.get("OUTPUT_PATH_PENZANCE")
 
     save_combined_features_plot(
         df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times
@@ -1246,7 +1232,7 @@ def get_interpolated_feature_data(final_PenzanceTwin_dataset):
         "Wind(m/s)"
     ].interpolate(method="time")
     final_PenzanceTwin_dataset.reset_index(inplace=True)
-    
+
     return final_PenzanceTwin_dataset
 
 
@@ -1265,7 +1251,9 @@ def get_feature_and_overtopping_times_data(final_PenzanceTwin_dataset, feature_n
         final_PenzanceTwin_dataset, feature_name
     )
 
-    final_PenzanceTwin_dataset = get_interpolated_feature_data(final_PenzanceTwin_dataset)
+    final_PenzanceTwin_dataset = get_interpolated_feature_data(
+        final_PenzanceTwin_dataset
+    )
     return final_PenzanceTwin_dataset, overtopping_times_filtered
 
 
@@ -1278,12 +1266,8 @@ def plot_significant_wave_height(start_date_block):
 
     # Step 9. Now we also want to plot Hs and wave direction geospatially and save to figures folder.
 
-    send_here_wave_folder = os.environ.get(
-        "MET_OFFICE_WAVE_FOLDER"
-    )
-    output_folder = os.environ.get(
-        "PENZANCE_OUTPUT_WAVES_FOLDER"
-    )
+    send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
+    output_folder = os.environ.get("PENZANCE_OUTPUT_WAVES_FOLDER")
 
     current_block = start_date_block.strftime("%Y%m%d")
     print(f"Processing Block: {current_block}")
@@ -1475,8 +1459,7 @@ def plot_significant_wave_height(start_date_block):
 
 
 def generate_overtopping_graphs():
-    """Generate overtopping events graphs, features line plots and significant-wave-height contour plots
-    """
+    """Generate overtopping events graphs, features line plots and significant-wave-height contour plots"""
 
     global df, start_time
     df, start_time, start_date_block = get_digital_twin_dataset(datetime.now().date())

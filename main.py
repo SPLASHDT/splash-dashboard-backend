@@ -91,7 +91,7 @@ def get_penzance_wave_overtopping():
     Returns:
         Json: Penzance forecast wave overtopping data in json format
     """
-    
+
     option = request.args.get("option", "penzance")
     (
         date_object,
@@ -323,7 +323,7 @@ def get_dawlish_wind_speed():
     Returns:
          Json: Dawlish wind speed data and forecast wave overtopping times data in Json format
     """
-    
+
     option = request.args.get("option", "dawlish")
     (
         date_object,

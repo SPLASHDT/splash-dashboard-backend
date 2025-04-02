@@ -60,9 +60,7 @@ Dawlish_Wave_Buoy_LONGITUDE = float(os.environ.get("DAWLISH_WAVE_BUOY_LONGITUDE"
 
 # Step 4: Now we load our SPLASH models
 
-SPLASH_DIGITAL_TWIN_models_folder = os.environ.get(
-    "DAWLISH_MODELS_FOLDER"
-)
+SPLASH_DIGITAL_TWIN_models_folder = os.environ.get("DAWLISH_MODELS_FOLDER")
 
 machine_learning_models = {"RF1": {}, "RF2": {}, "RF3": {}, "RF4": {"Regressor": {}}}
 
@@ -143,7 +141,7 @@ def setInputFolderPaths(option: str = "dawlish"):
     Args:
         option (str, optional): Dataset's option name. Defaults to "dawlish".
     """
-    
+
     global Met_office_wave_folder, Met_office_wind_folder, wl_file
     (
         met_office_wave_folder,
@@ -477,7 +475,7 @@ def get_digital_twin_dataset(start_date):
     Returns:
         Dataframe: Digital twin dataframe
     """
-    
+
     # This indicates all our data entries in our combined block.
     block_data = process_block(get_next_block(start_date))
 
@@ -1253,9 +1251,8 @@ def adjust_arrow_density(latitudes, longitudes, density_factor=12):
 
 
 def plot_significant_wave_height():
-    """Plot significant wave height
-    """
-    
+    """Plot significant wave height"""
+
     # Step 11: Plot Hs geospatially and save to the figures folder
     send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
     output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
@@ -1452,9 +1449,8 @@ def plot_significant_wave_height():
 
 
 def generate_overtopping_graphs():
-    """Generate overtopping graphs
-    """
-    
+    """Generate overtopping graphs"""
+
     global final_DawlishTwin_dataset
     final_DawlishTwin_dataset = get_digital_twin_dataset(datetime.now().date())
     load_models(SPLASH_DIGITAL_TWIN_models_folder)

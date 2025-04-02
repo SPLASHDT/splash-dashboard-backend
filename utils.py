@@ -8,8 +8,7 @@ import json
 
 
 def loadConfigFile():
-    """Load environment variables from configuration file
-    """
+    """Load environment variables from configuration file"""
 
     environment = os.getenv("SPLASH_ENV")
 
@@ -150,7 +149,7 @@ def all_variables_with_initial_values(
     Returns:
         bool: Flag is True when all variables have zero value, False otherwise
     """
-    
+
     return (
         sig_wave_height == 0
         and freeboard == 0
