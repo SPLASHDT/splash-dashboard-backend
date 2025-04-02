@@ -46,7 +46,6 @@ utils.loadConfigFile()
 # Step 2: Downloading and concatenating our dataset.
 
 # We extract from thee file paths (wave, wind, water level(wl)). NB: we have a state file so if we do not have the proceeding data we proceed using the nearest time.
-# SPLASH_wave_folder = '/content/drive/MyDrive/splash/data_inputs/wave'
 SPLASH_wave_folder = os.environ.get(
     "MET_OFFICE_WAVE_FOLDER"
 )
@@ -141,6 +140,12 @@ start_time = datetime.now()
 
 
 def setInputFolderPaths(option: str = "penzance"):
+    """Set input folder paths
+
+    Args:
+        option (str, optional): Dataset's option name. Defaults to "penzance".
+    """
+
     global SPLASH_wave_folder, SPLASH_wind_folder, wl_file
     (
         met_office_wave_folder,
@@ -153,8 +158,16 @@ def setInputFolderPaths(option: str = "penzance"):
     wl_file = penzance_water_level_file
 
 
-# Extracting wave data
 def get_wave_files(block_date):
+    """Get wave files
+
+    Args:
+        block_date (string): String representing date
+
+    Returns:
+        Array: Array of files names
+    """
+
     Met_office_wave_files = []
     for file_name in os.listdir(SPLASH_wave_folder):
         if file_name.startswith(
@@ -164,16 +177,37 @@ def get_wave_files(block_date):
     return sorted(Met_office_wave_files)
 
 
-# Now we need our wind date
 def get_wind_file(template, folder, date):
+    """Get wind file
+
+    Args:
+        template (string): Template of file's name
+        folder (string): Folder's name
+        date (string): String representing date
+
+    Returns:
+        string: Path to wind file
+    """
+
     for file_name in os.listdir(folder):
         if file_name.startswith(template.format(date.strftime("%Y%m%d"))):
             return os.path.join(folder, file_name)
     return None
 
 
-# Let us now extract the wave data after we know the speficic location on interest.
 def extract_wave_data(Met_office_wave_files):
+    """Extract the wave data after we know the speficic location on interest
+
+    Args:
+        Met_office_wave_files (Array): Array of file names
+
+    Raises:
+        ValueError: Error's description
+
+    Returns:
+        Dataframe: Mean wave data values
+    """
+
     wave_data = []
     for file_path in Met_office_wave_files:
         Penzance_ds_wave = xr.open_dataset(file_path)
@@ -204,8 +238,19 @@ def extract_wave_data(Met_office_wave_files):
     return Penzance_combined_wave.set_index("datetime").resample("3H").mean()
 
 
-# Lets now extract the wind speed and direction files.
 def extract_wind_data(wind_file):
+    """Extract the wind speed and direction files.
+
+    Args:
+        wind_file (string): Wind file path
+
+    Raises:
+        ValueError: Error's description
+
+    Returns:
+        Dataframe: Penzance wind dataframe
+    """
+
     data = []
     grbs = pygrib.open(wind_file)
 
@@ -247,8 +292,13 @@ def extract_wind_data(wind_file):
     return Penzance_df_wind
 
 
-# Now extract the wl data (this is the easiest, its in one combined text file)
 def extract_water_level_data():
+    """Extract the wl data (this is the easiest, its in one combined text file)
+
+    Returns:
+        Dataframe: Interpolated water level dataframe
+    """
+
     water_level = pd.read_csv(
         wl_file,
         sep=r"\s+",
@@ -267,6 +317,18 @@ def extract_water_level_data():
 def extract_hourly_water_level_data(
     water_level_df, start_date, end_date, all_variables_with_initial_values
 ):
+    """Extract hourly water level data
+
+    Args:
+        water_level_df (Dataframe): Water level dataframe
+        start_date (string): String representing date
+        end_date (string): String representing date
+        all_variables_with_initial_values (bool): Flag which defines if all variables have zero values
+
+    Returns:
+        Dataframe: Interpolated water level dataframe
+    """
+
     if all_variables_with_initial_values:
         water_level = pd.read_csv(
             wl_file,
@@ -308,8 +370,16 @@ def extract_hourly_water_level_data(
     return water_level.asfreq("1H").interpolate()
 
 
-# Now we concatenate our data into a big dataset
 def process_block(block_date):
+    """Concatenate our data into a big dataset
+
+    Args:
+        block_date (Date): Forecast date
+
+    Returns:
+        Dataframe: Combined dataframe which holds all variables data
+    """
+
     try:
         wave_files = get_wave_files(block_date)
         wind_speed_file = get_wind_file(
@@ -378,8 +448,16 @@ def process_block(block_date):
         return process_block(previous_block_date)
 
 
-# Function to get the next block date, this is the tricky bit, the code should recognise the date on the files and then logically proceed to the next date but this should be verified
 def get_next_block(block_date):
+    """Get the next block date, this is the tricky bit, the code should recognise the date on the files and then logically proceed to the next date but this should be verified
+
+    Args:
+        block_date (Date): Forecast date
+
+    Returns:
+        Date: Today's date or last block's date or 
+    """
+
     today_date = block_date
     if os.path.exists(state_file):
         with open(state_file, "r") as file:
@@ -392,6 +470,17 @@ def get_next_block(block_date):
 
 
 def get_digital_twin_dataset(start_date):
+    """Get digital twin dataset
+
+    Args:
+        start_date (Date): Forecast start date
+
+    Raises:
+        ValueError: Error's description
+
+    Returns:
+        Dataframe, Date, Date: Digital twin dataframe, inital forecast date, last block's date
+    """
 
     # This is our file names, these are all the variables we need to make our predicitons.
     # Ensure we get the next block to process
@@ -421,8 +510,13 @@ def get_digital_twin_dataset(start_date):
     return df, start_time_tmp, start_date_block_tmp
 
 
-# Load our SPLASH models, all these models have individually been tuned, regularised (if needed) with optimised threshold adjustments for harminising the F1 score, if you require the code for each model, just ask.
 def load_model_files(SPLASH_Digital_Twin_models_folder):
+    """Load our SPLASH models, all these models have individually been tuned, regularised (if needed) with optimised threshold adjustments for harminising the F1 score, if you require the code for each model, just ask.
+
+    Args:
+        SPLASH_Digital_Twin_models_folder (string): Digital twin models folder
+    """
+
     for file_name in os.listdir(SPLASH_Digital_Twin_models_folder):
         if "RF1" in file_name:
             if "T24" in file_name:
@@ -480,6 +574,15 @@ def load_model_files(SPLASH_Digital_Twin_models_folder):
 
 # Step 5: Calculate the Confidence of our model when it predicts whether overtopping happens. Please note, we apply gini to assign confidence for our binary, this confidence is not for our regreession model which would typically use MSE
 def get_confidence_color(confidence):
+    """Get colour according to confidence value
+
+    Args:
+        confidence (float): Confidence value
+
+    Returns:
+        string: Colour's name
+    """
+
     try:
         confidence = float(confidence)
         if confidence > 0.8:
@@ -493,6 +596,15 @@ def get_confidence_color(confidence):
 
 
 def adjust_features(df):
+    """Adjust wave and atmospheric features
+
+    Args:
+        df (Dataframe): Initial digital twin dataframe
+
+    Returns:
+        Dataframe: Dataframe with adjusted features values
+    """
+
     Penzance_adjusted_note = df.copy()
     Penzance_adjusted_note["Hs"] *= (
         1 + significant_wave_height_slider_SPLASH.value / 100
@@ -514,6 +626,21 @@ def adjust_overtopping_features(
     wind_speed,
     wind_direction,
 ):
+    """Adjust wave and atmospheric features
+
+    Args:
+        df (Dataframe): Initial digital twin dataframe
+        sig_wave_height (integer): Significant wave height value in percentage
+        freeboard (_type_): Freeboard value in percentage
+        mean_wave_period (_type_): Mean wave period value in percentage
+        mean_wave_dir (_type_): Mean wave direction value in degrees
+        wind_speed (_type_): Wind speed value in percentage
+        wind_direction (_type_): Wind direction value in degrees
+
+    Returns:
+        Dataframe: Dataframe with adjusted features values
+    """
+
     Penzance_adjusted_note = df.copy()
     Penzance_adjusted_note["Hs"] *= 1 + sig_wave_height / 100
     Penzance_adjusted_note["Tm"] *= 1 + mean_wave_period / 100
@@ -525,6 +652,15 @@ def adjust_overtopping_features(
 
 
 def revise_rf1_prediction(rf1_prediction, hs_value):
+    """Revise rf1 prediction
+
+    Args:
+        rf1_prediction (integer): Prediction value
+        hs_value (float): Significant wave height value
+
+    Returns:
+        integer: Final prediction value
+    """
     if rf1_prediction == 1 and hs_value < 0.84:
         return 0
     if rf1_prediction == 0 and (
@@ -535,24 +671,64 @@ def revise_rf1_prediction(rf1_prediction, hs_value):
 
 
 def revise_rf1_prediction_wind(rf1_prediction, wind_speed):
+    """Revise rf1 prediction wind
+
+    Args:
+        rf1_prediction (integer): Prediction value
+        wind_speed (float): Wind speed value
+
+    Returns:
+        integer: Final prediction value
+    """
+
     if rf1_prediction == 1 and wind_speed < 2.8:
         return 0
     return rf1_prediction
 
 
 def revise_rf1_prediction_crossshorewind(rf1_prediction, crossshore_wind_dir):
+    """Revise rf1 prediction crossshorewind
+
+    Args:
+        rf1_prediction (integer): Predicition value
+        crossshore_wind_dir (float): Wind direction value
+
+    Returns:
+        integer: Final prediction value
+    """
+
     if rf1_prediction == 1 and crossshore_wind_dir > 300:
         return 0
     return rf1_prediction
 
 
 def revise_rf1_prediction_crossshorewave(rf1_prediction, crossshore_wave):
+    """Revise rf1 prediction crossshorewave
+
+    Args:
+        rf1_prediction (integer): Prediction value
+        crossshore_wave (float): Mean wave direction value
+
+    Returns:
+        integer: Final prediction value
+    """
+
     if rf1_prediction == 0 and crossshore_wave in [98, 99, 100, 102, 103, 104, 107]:
         return 1
     return rf1_prediction
 
 
 def revise_rf1_prediction_freeboard(rf1_prediction, freeboard_value):
+    """Revise rf1 prediction freeboard
+
+    Args:
+        rf1_prediction (integer): Prediction value
+        freeboard_value (float): Freeboard value
+
+    Returns:
+        integer: Final prediction value
+    """
+
     if rf1_prediction == 1 and (
         (5.367 <= freeboard_value <= 5.491)
         or (5.561 <= freeboard_value <= 5.647)
@@ -563,8 +739,17 @@ def revise_rf1_prediction_freeboard(rf1_prediction, freeboard_value):
     return rf1_prediction
 
 
-# Add selected model column to main dataframe
 def add_selected_model_col(dt_df, start_time_tmp):
+    """Add selected model column to main dataframe
+
+    Args:
+        dt_df (Dataframe): Digital twin dataframe
+        start_time_tmp (Date): Forecast start date
+
+    Returns:
+        Dataframe: Updated digital twin dataframe
+    """
+
     # Step 6: Now we must get our models to acutally predict. We have 4 questions: 1. overtopping occurence rig 1 (yes/no), overtopping frequency at rig 1 (n = ?), overtopping occurence at rig 2 (yes/no), overtopping freuqency at rig 2 (n= ?)
 
     if "Selected_Model" not in dt_df.columns:
@@ -586,6 +771,16 @@ def add_selected_model_col(dt_df, start_time_tmp):
 
 
 def process_wave_overtopping(df_adjusted, start_time):
+    """Process wave overtopping
+
+    Args:
+        df_adjusted (Dataframe): Main dataframe with adjusted wave and atmospheric variables
+        start_time (Date): Forecast start date
+
+    Returns:
+        Dataframes: First location and second location wave-overtopping-events dataframes
+    """
+
     global use_our_previous_SPLASH_rf1_rf2, use_our_previous_SPLASH_rf3_rf4, previous_rf1_confidences, previous_rf3_confidences
     Met_office_time_stamps = df_adjusted["time"].dropna()
     Our_overtopping_counts_rig1_rf1_rf2 = []
@@ -661,15 +856,6 @@ def process_wave_overtopping(df_adjusted, start_time):
     # Assign final RF1 predictions to the dataframe
     df_adjusted["RF1_Final_Predictions"] = rf1_final_predictions
 
-    # Prepare DataFrames for Plotly
-    print(
-        " Met_office_time_stamps!: ",
-        Met_office_time_stamps.size,
-        " Our_overtopping_counts_rig1_rf1_rf2: ",
-        len(Our_overtopping_counts_rig1_rf1_rf2),
-        " rf1_confidences: ",
-        len(rf1_confidences),
-    )
     data_rf1_rf2 = pd.DataFrame(
         {
             "Time": Met_office_time_stamps,
@@ -699,6 +885,17 @@ def plot_overtopping_graphs(
     rf1_confidences,
     rf3_confidences,
 ):
+    """Plot overtopping graphs
+
+    Args:
+        df_adjusted (Dataframe): Main dataframe with adjusted wave and atmospheric variables
+        Met_office_time_stamps_df (Dataframe): Time stamps dataframe
+        Our_overtopping_counts_rig1_rf1_rf2 (List): Overtopping counts list of first location
+        Our_overtopping_counts_rig2_rf3_rf4 (List): Overtopping counts list of second location
+        rf1_confidences (List): Confidence values list of overtopping events prediction for first location
+        rf3_confidences (List): Confidence values list of overtopping events prediction for second location
+    """
+
     global use_our_previous_SPLASH_rf1_rf2, use_our_previous_SPLASH_rf3_rf4, previous_rf1_confidences, previous_rf3_confidences
 
     clear_output(wait=True)
@@ -864,8 +1061,13 @@ def plot_overtopping_graphs(
     )
 
 
-# Update overtopping graphs after inputting new variales values
 def on_submit_clicked(b):
+    """Update overtopping graphs after inputting new variales values
+
+    Args:
+        b (Button): Button instance
+    """
+
     df_adjusted = adjust_features(df)
     process_wave_overtopping(df_adjusted, start_time)
 
@@ -874,6 +1076,15 @@ def on_submit_clicked(b):
 def save_combined_features_plot(
     df, hourly_freeboard, send_to_this_output_path_folder, overtopping_times
 ):
+    """Save combined features plot
+
+    Args:
+        df (Dataframe): Digital twin dataframe
+        hourly_freeboard (Dataframe): Hourly freeboard dataframe
+        send_to_this_output_path_folder (string): Path to outputs folder
+        overtopping_times (Dataframe): Overtopping events times dataframe
+    """
+
     fig, axs = plt.subplots(3, 1, figsize=(8, 8), dpi=300, sharex=True)
 
     # Hs
@@ -951,6 +1162,12 @@ def save_combined_features_plot(
 
 
 def combine_features(df):
+    """Combine_features
+
+    Args:
+        df (Dataframe): Digital twin dataframe
+    """
+
     hourly_freeboard = pd.read_csv(
         wl_file,
         sep=r"\s+",
@@ -969,7 +1186,7 @@ def combine_features(df):
         hourly_freeboard.reindex(date_range).interpolate(method="time").reset_index()
     )
     hourly_freeboard.rename(columns={"index": "datetime"}, inplace=True)
-    df = get_feature_and_overtopping_times_data(df)
+    df = get_interpolated_feature_data(df)
     overtopping_times = df[df["RF1_Final_Predictions"] == 1]["time"]
     send_to_this_output_path_folder = os.environ.get(
         "OUTPUT_PATH_PENZANCE"
@@ -980,8 +1197,17 @@ def combine_features(df):
     )
 
 
-# Get overtopping times data
-def get_overtopping_times_data(final_PenzanceTwin_dataset, variable_name):
+def get_overtopping_times_data(final_PenzanceTwin_dataset, feature_name):
+    """Get overtopping times data
+
+    Args:
+        final_PenzanceTwin_dataset (Dataframe): Digital twin dataframe
+        feature_name (string): Variable's name
+
+    Returns:
+        _type_: Forecast overtopping events times dataframe
+    """
+
     overtopping_times_penzance = final_PenzanceTwin_dataset[
         final_PenzanceTwin_dataset["RF1_Final_Predictions"] == 1
     ]["time"]
@@ -992,18 +1218,22 @@ def get_overtopping_times_data(final_PenzanceTwin_dataset, variable_name):
         for time in overtopping_times_penzance
         if time in final_PenzanceTwin_dataset["time"].values
     ]
-    overtopping_times[variable_name] = final_PenzanceTwin_dataset[
+    overtopping_times[feature_name] = final_PenzanceTwin_dataset[
         final_PenzanceTwin_dataset["time"].isin(overtopping_times_filtered)
-    ][variable_name]
+    ][feature_name]
     overtopping_times["overtopping_time"] = overtopping_times_filtered
     return overtopping_times
 
 
-# Interpolate features data
-def get_feature_and_overtopping_times_data(final_PenzanceTwin_dataset, variable_name):
-    overtopping_times_filtered = get_overtopping_times_data(
-        final_PenzanceTwin_dataset, variable_name
-    )
+def get_interpolated_feature_data(final_PenzanceTwin_dataset):
+    """Get feature data
+
+    Args:
+        final_PenzanceTwin_dataset (Dataframe): Digital twin dataframe
+
+    Returns:
+        Dataframe: Interpolated feature dataframe
+    """
 
     final_PenzanceTwin_dataset["time"] = pd.to_datetime(
         final_PenzanceTwin_dataset["time"]
@@ -1016,10 +1246,36 @@ def get_feature_and_overtopping_times_data(final_PenzanceTwin_dataset, variable_
         "Wind(m/s)"
     ].interpolate(method="time")
     final_PenzanceTwin_dataset.reset_index(inplace=True)
+    
+    return final_PenzanceTwin_dataset
+
+
+def get_feature_and_overtopping_times_data(final_PenzanceTwin_dataset, feature_name):
+    """Get feature and overtopping times data
+
+    Args:
+        final_PenzanceTwin_dataset (Dataframe): Digital twin dataframe
+        feature_name (string): Feature's name
+
+    Returns:
+        Dataframes: Interpolated feature and forecast-overtopping-events dataframes
+    """
+
+    overtopping_times_filtered = get_overtopping_times_data(
+        final_PenzanceTwin_dataset, feature_name
+    )
+
+    final_PenzanceTwin_dataset = get_interpolated_feature_data(final_PenzanceTwin_dataset)
     return final_PenzanceTwin_dataset, overtopping_times_filtered
 
 
 def plot_significant_wave_height(start_date_block):
+    """Plot significant wave height graphs
+
+    Args:
+        start_date_block (Date): Forecast start date
+    """
+
     # Step 9. Now we also want to plot Hs and wave direction geospatially and save to figures folder.
 
     send_here_wave_folder = os.environ.get(
@@ -1219,6 +1475,9 @@ def plot_significant_wave_height(start_date_block):
 
 
 def generate_overtopping_graphs():
+    """Generate overtopping events graphs, features line plots and significant-wave-height contour plots
+    """
+
     global df, start_time
     df, start_time, start_date_block = get_digital_twin_dataset(datetime.now().date())
     load_model_files(SPLASH_Digital_Twin_models_folder)

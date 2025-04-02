@@ -21,6 +21,12 @@ app = Flask(__name__)
 
 @app.route("/splash/dawlish/wave-overtopping", methods=["GET"])
 def get_dawlish_wave_overtopping():
+    """Get Dawlish forecast wave overtopping data
+
+    Returns:
+        Json: Dawlish forecast wave overtopping data in json format
+    """
+
     option = request.args.get("option", "dawlish")
     (
         date_object,
@@ -80,6 +86,12 @@ def get_dawlish_wave_overtopping():
 
 @app.route("/splash/penzance/wave-overtopping", methods=["GET"])
 def get_penzance_wave_overtopping():
+    """Get Penzance forecast wave overtopping data
+
+    Returns:
+        Json: Penzance forecast wave overtopping data in json format
+    """
+    
     option = request.args.get("option", "penzance")
     (
         date_object,
@@ -149,6 +161,12 @@ def get_penzance_wave_overtopping():
 
 @app.route("/splash/dawlish/significant-wave-height", methods=["GET"])
 def get_dawlish_significant_wave_height():
+    """Get Dawlish significant wave height data and overtopping times data
+
+    Returns:
+        Json:  Dawlish significant wave height data and forecast wave overtopping times data in Json format
+    """
+
     option = request.args.get("option", "dawlish")
     (
         date_object,
@@ -225,6 +243,12 @@ def get_dawlish_significant_wave_height():
 
 @app.route("/splash/dawlish/tidal-level", methods=["GET"])
 def get_dawlish_water_level():
+    """Get Dawlish tidal level data and overtopping times data
+
+    Returns:
+         Json:  Dawlish tidal level data and forecast wave overtopping times data in Json format
+    """
+
     option = request.args.get("option", "dawlish")
     (
         date_object,
@@ -294,6 +318,12 @@ def get_dawlish_water_level():
 
 @app.route("/splash/dawlish/wind-speed", methods=["GET"])
 def get_dawlish_wind_speed():
+    """Get Dawlish wind speed data and overtopping times data
+
+    Returns:
+         Json: Dawlish wind speed data and forecast wave overtopping times data in Json format
+    """
+    
     option = request.args.get("option", "dawlish")
     (
         date_object,
@@ -364,6 +394,12 @@ def get_dawlish_wind_speed():
 
 @app.route("/splash/penzance/significant-wave-height", methods=["GET"])
 def get_penzance_significant_wave_height():
+    """Get Penzance significant wave height data and overtopping times data
+
+    Returns:
+        Json: Penzance significant wave height data and forecast wave overtopping times data in Json format
+    """
+
     option = request.args.get("option", "penzance")
     (
         date_object,
@@ -445,6 +481,12 @@ def get_penzance_significant_wave_height():
 
 @app.route("/splash/penzance/tidal-level", methods=["GET"])
 def get_penzance_tidal_level():
+    """Get Penzance tidal level data and overtopping times data
+
+    Returns:
+         Json:  Penzance tidal level data and forecast wave overtopping times data in Json format
+    """
+
     option = request.args.get("option", "penzance")
     (
         date_object,
@@ -519,6 +561,12 @@ def get_penzance_tidal_level():
 
 @app.route("/splash/penzance/wind-speed", methods=["GET"])
 def get_penzance_wind_speed_level():
+    """Get Penzance wind speed data and overtopping times data
+
+    Returns:
+         Json: Penzance wind speed data and forecast wave overtopping times data in Json format
+    """
+
     option = request.args.get("option", "penzance")
     (
         date_object,

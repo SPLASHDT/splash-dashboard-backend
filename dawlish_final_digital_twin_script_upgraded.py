@@ -18,7 +18,6 @@
 
 # Step 1: Import necessary libraries
 
-# !pip install pygrib
 import pygrib
 import joblib
 from IPython.display import display, clear_output
@@ -35,7 +34,6 @@ import os
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 
 import seaborn as sns
 from matplotlib.colors import Normalize
@@ -140,6 +138,12 @@ final_DawlishTwin_dataset = pd.DataFrame()
 
 
 def setInputFolderPaths(option: str = "dawlish"):
+    """Set input folder paths
+
+    Args:
+        option (str, optional): Dataset's option name. Defaults to "dawlish".
+    """
+    
     global Met_office_wave_folder, Met_office_wind_folder, wl_file
     (
         met_office_wave_folder,
@@ -152,8 +156,16 @@ def setInputFolderPaths(option: str = "dawlish"):
     wl_file = water_level_file
 
 
-# This takes data from the wave block
 def get_wave_files(block_date):
+    """This takes data from the wave block
+
+    Args:
+        block_date (Date):  String representing date
+
+    Returns:
+        Array: Array of files names
+    """
+
     Current_wave_files = []
     for file_name in os.listdir(Met_office_wave_folder):
         if file_name.startswith(
@@ -163,16 +175,37 @@ def get_wave_files(block_date):
     return sorted(Current_wave_files)
 
 
-# This takes data from the wind files
 def get_wind_file(template, folder, date):
+    """Extract data from wind file
+
+    Args:
+        template (string): Template of file's name
+        folder (string): Folder's name
+        date (string): String representing date
+
+    Returns:
+        string: Path to wind file
+    """
+
     for file_name in os.listdir(folder):
         if file_name.startswith(template.format(date.strftime("%Y%m%d"))):
             return os.path.join(folder, file_name)
     return None
 
 
-# Now we take data from the wave file.
 def extract_wave_data(Current_wave_files):
+    """Extract data from the wave file
+
+    Args:
+        Current_wave_files (Array): Array of file names
+
+    Raises:
+        ValueError: Error's description
+
+    Returns:
+        Dataframe: Mean wave data
+    """
+
     wave_data = []
     for file_path in Current_wave_files:
         Met_wave_Dawlish_Buoy = xr.open_dataset(file_path)
@@ -203,8 +236,19 @@ def extract_wave_data(Current_wave_files):
     return combined_wave.set_index("datetime").resample("3H").mean()
 
 
-# Now we get the wind speed and direction files.
 def extract_wind_data(wind_file):
+    """Extract wind speed and direction data
+
+    Args:
+        wind_file (string): Wind file path
+
+    Raises:
+        ValueError: Error's description
+
+    Returns:
+        Dataframe: Mean wind data
+    """
+
     data = []
     grbs = pygrib.open(wind_file)
     for grb in grbs:
@@ -237,8 +281,13 @@ def extract_wind_data(wind_file):
     return Met_wind.resample("3H").mean()
 
 
-# now we get our water level data, this is the easiest as its from a text file.
 def extract_water_level_data():
+    """Get water level data
+
+    Returns:
+        Dataframe: Interpolated water level data
+    """
+
     water_level = pd.read_csv(
         wl_file,
         sep=r"\s+",
@@ -257,6 +306,18 @@ def extract_water_level_data():
 def extract_water_level_for_range(
     water_level_df, start_date, end_date, all_variables_with_initial_values
 ):
+    """Extract water level for range
+
+    Args:
+        water_level_df (Dataframe): Water level dataframe
+        start_date (string): String representing start date
+        end_date (string): String representing end date
+        all_variables_with_initial_values (bool): Flag which define if all wave and atmospheric variables have zero values
+
+    Returns:
+        Dataframe: Interpolated water level dataframe
+    """
+
     # Load the water level data from the text file
     if all_variables_with_initial_values:
         water_level = pd.read_csv(
@@ -302,8 +363,16 @@ def extract_water_level_for_range(
     return water_level_filtered.resample("1H").interpolate()
 
 
-# This now combines all the data from the wind, wave, wl into a single dataset and concatenates the code, which our models will eventually process.
 def process_block(block_date):
+    """Combines all the data from the wind, wave, water level into a single dataset and concatenates the code, which models will eventually process.
+
+    Args:
+        block_date (Date): Forecast block's date
+
+    Returns:
+        Dataframe: Combined dataframe which holds wind, wave and water level data
+    """
+
     try:
         # Fetch wave, wind speed, and wind direction files for the block_date
         wave_files = get_wave_files(block_date)
@@ -383,6 +452,15 @@ def process_block(block_date):
 
 
 def get_next_block(start_date):
+    """Get block's date
+
+    Args:
+        start_date (Date): Forecast block's date
+
+    Returns:
+        Date: Block's date
+    """
+
     # Use the current calendar date as today's block date
     # current_date = datetime.now().date()
     current_date = start_date
@@ -391,6 +469,15 @@ def get_next_block(start_date):
 
 
 def get_digital_twin_dataset(start_date):
+    """Get digital twin dataset
+
+    Args:
+        start_date (Date): Forecast start date
+
+    Returns:
+        Dataframe: Digital twin dataframe
+    """
+    
     # This indicates all our data entries in our combined block.
     block_data = process_block(get_next_block(start_date))
 
@@ -461,6 +548,12 @@ def get_digital_twin_dataset(start_date):
 
 
 def load_models(SPLASH_DIGITAL_TWIN_models_folder):
+    """Load models
+
+    Args:
+        SPLASH_DIGITAL_TWIN_models_folder (string): Path to digital twin models folder
+    """
+
     for file_name in os.listdir(SPLASH_DIGITAL_TWIN_models_folder):
         file_path = os.path.join(SPLASH_DIGITAL_TWIN_models_folder, file_name)
         if "RF1" in file_name:
@@ -500,6 +593,16 @@ def load_models(SPLASH_DIGITAL_TWIN_models_folder):
 
 
 def revise_rf1_prediction(rf1_prediction, row):
+    """Revise rf1 prediction
+
+    Args:
+        rf1_prediction (integer): Prediction's value
+        row (Series): Features data row
+
+    Returns:
+        integer: Final prediction's value
+    """
+
     hs_value_sweetspot = row["Hs"] > rf1_hs_threshold_regularisation
     wind_value_sweetspot = row["Wind(m/s)"] > rf1_wind_threshold_regularisation
     wave_dir_sweetspot = (
@@ -516,6 +619,16 @@ def revise_rf1_prediction(rf1_prediction, row):
 
 
 def revise_rf3_prediction(rf3_prediction, row):
+    """Revise rf3 prediction
+
+    Args:
+        rf3_prediction (integer): Prediction's value
+        row (Series): Features data row
+
+    Returns:
+        integer: Final prediction's value
+    """
+
     hs_value_sweetspot = row["Hs"] > rf3_hs_threshold_regularisation
     wind_value_sweetspot = row["Wind(m/s)"] > rf3_wind_threshold_regularisation
     wave_dir_sweetspot = (
@@ -533,6 +646,15 @@ def revise_rf3_prediction(rf3_prediction, row):
 
 # Step 6: Now we assign confidence for our model.
 def get_confidence_color(confidence, is_railway=False):
+    """Get colour according to confidence value
+
+    Args:
+        confidence (float): Confidence value
+
+    Returns:
+        string: Colour's name
+    """
+
     try:
         confidence = float(confidence)
 
@@ -555,6 +677,15 @@ def get_confidence_color(confidence, is_railway=False):
 
 
 def adjust_features(df):
+    """Adjust wave and atmospheric features
+
+    Args:
+        df (Dataframe): Initial digital twin dataframe
+
+    Returns:
+        Dataframe: Dataframe with adjusted features values
+    """
+
     df_adjusted_slideronly = df.copy()
     df_adjusted_slideronly["Hs"] *= 1 + Sig_wave_height_slider_output.value / 100
     df_adjusted_slideronly["Tm"] *= 1 + Mean_Period_Slider.value / 100
@@ -574,6 +705,21 @@ def adjust_overtopping_features(
     wind_speed,
     wind_direction,
 ):
+    """Adjust wave and atmospheric features
+
+    Args:
+        df (Dataframe): Initial digital twin dataframe
+        sig_wave_height (integer): Significant wave height value in percentage
+        freeboard (_type_): Freeboard value in percentage
+        mean_wave_period (_type_): Mean wave period value in percentage
+        mean_wave_dir (_type_): Mean wave direction value in degrees
+        wind_speed (_type_): Wind speed value in percentage
+        wind_direction (_type_): Wind direction value in degrees
+
+    Returns:
+        Dataframe: Dataframe with adjusted features values
+    """
+
     df_adjusted_slideronly = df.copy()
     df_adjusted_slideronly["Hs"] *= 1 + sig_wave_height / 100
     df_adjusted_slideronly["Tm"] *= 1 + mean_wave_period / 100
@@ -585,6 +731,15 @@ def adjust_overtopping_features(
 
 
 def process_wave_overtopping(df_adjusted_slideronly):
+    """Process wave overtopping
+
+    Args:
+        df_adjusted_slideronly (Dataframe): Main dataframe with adjusted wave and atmospheric variables
+
+    Returns:
+        Dataframes: First location and second location wave-overtopping-events dataframes
+    """
+
     time_stamps = df_adjusted_slideronly["time"].dropna()
     overtopping_counts_rf1_rf2 = []
     overtopping_counts_rf3_rf4 = []
@@ -686,7 +841,6 @@ def process_wave_overtopping(df_adjusted_slideronly):
     return data_rf1_rf2, data_rf3_rf4
 
 
-#  Plot overtopping graphs using Matplotlib
 def plot_overtopping_graphs(
     df_adjusted_slideronly_tmp,
     overtopping_counts_rf1_rf2,
@@ -694,6 +848,16 @@ def plot_overtopping_graphs(
     rf1_confidences_GINI,
     rf3_confidences_GINI,
 ):
+    """Plot overtopping graphs using Matplotlib
+
+    Args:
+        df_adjusted_slideronly_tmp (Dataframe): Main dataframe with adjusted wave and atmospheric variables
+        overtopping_counts_rf1_rf2 (List): Overtopping counts list of first location
+        overtopping_counts_rf3_rf4 (List): Overtopping counts list of second location
+        rf1_confidences_GINI (List): Confidence values list of overtopping events prediction for first location
+        rf3_confidences_GINI (List): Confidence values list of overtopping events prediction for second location
+    """
+
     # Step 9, now we plot our results
     clear_output(wait=True)
     fig, (axes1_DG_Plot, axes2_DG_Plot) = plt.subplots(2, 1, figsize=(16, 10), dpi=300)
@@ -860,6 +1024,12 @@ def plot_overtopping_graphs(
 
 
 def on_submit_clicked(button):
+    """Update overtopping graphs after inputting new variales values
+
+    Args:
+        b (Button): Button instance
+    """
+
     df_adjusted = adjust_features(final_DawlishTwin_dataset)
     clear_output(wait=True)
     process_wave_overtopping(df_adjusted)
@@ -878,6 +1048,16 @@ def on_submit_clicked(button):
 def save_penazance_combined_features_plot_with_overtopping(
     df, overtopping_times, output_path, start_date, end_date
 ):
+    """Save combined features plot
+
+    Args:
+        df (Dataframe): Digital twin dataframe
+        overtopping_times (Dataframe): Overtopping events dataframe
+        output_path (string): Path to outputs folder
+        start_date (string): Forecast start date
+        end_date (string): Forecast end date
+    """
+
     df = (
         df.set_index("time")
         .reindex(pd.date_range(start=start_date, end=end_date, freq="1H"))
@@ -971,6 +1151,12 @@ def save_penazance_combined_features_plot_with_overtopping(
 
 
 def save_combined_features(final_DawlishTwin_dataset):
+    """Save combined features
+
+    Args:
+        final_DawlishTwin_dataset (Dataframe): Digital twin dataframe
+    """
+
     use_this_output_path_dawlish = os.environ.get("OUTPUT_PATH_DAWLISH")
     overtopping_times_dawlish = final_DawlishTwin_dataset[
         final_DawlishTwin_dataset["RF1_Final_Predictions"] == 1
@@ -987,8 +1173,17 @@ def save_combined_features(final_DawlishTwin_dataset):
     )
 
 
-# Get overtopping times data
-def get_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
+def get_overtopping_times_data(final_DawlishTwin_dataset, feature_name):
+    """Get overtopping times data
+
+    Args:
+        final_DawlishTwin_dataset (Dataframe): Digital twin dataframe
+        feature_name (string): Feature's name
+
+    Returns:
+        Dataframe: Overtopping events times dataframe
+    """
+
     overtopping_times_dawlish = final_DawlishTwin_dataset[
         final_DawlishTwin_dataset["RF1_Final_Predictions"] == 1
     ]["time"]
@@ -999,18 +1194,26 @@ def get_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
         for time in overtopping_times_dawlish
         if time in final_DawlishTwin_dataset["time"].values
     ]
-    overtopping_times[variable_name] = final_DawlishTwin_dataset[
+    overtopping_times[feature_name] = final_DawlishTwin_dataset[
         final_DawlishTwin_dataset["time"].isin(overtopping_times_filtered)
-    ][variable_name]
+    ][feature_name]
     overtopping_times["overtopping_time"] = overtopping_times_filtered
     return overtopping_times
 
 
-# Get features and overtopping times data
-def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, variable_name):
+def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, feature_name):
+    """Get features and overtopping times data
+
+    Args:
+        final_DawlishTwin_dataset (Dataframe): Digital twin dataframe
+        feature_name (string): Feature's name
+
+    Returns:
+        Dataframes: Interpolated feature and forecast-overtopping-events dataframes
+    """
 
     overtopping_times_filtered = get_overtopping_times_data(
-        final_DawlishTwin_dataset, variable_name
+        final_DawlishTwin_dataset, feature_name
     )
 
     block_start_date = final_DawlishTwin_dataset["time"].min()
@@ -1026,128 +1229,33 @@ def get_feature_and_overtopping_times_data(final_DawlishTwin_dataset, variable_n
     return final_DawlishTwin_dataset, overtopping_times_filtered
 
 
-# Function to adjust the number of arrows
 def adjust_arrow_density(latitudes, longitudes, density_factor=12):
+    """
+    Adjusts the density of arrows to be plotted by returning slice objects.
+
+    Args:
+        latitudes (list): A list or array of latitude values.
+        longitudes (list): A list or array of longitude values.
+        density_factor (int, optional): The factor by which to reduce the
+            density of arrows. Higher values result in fewer arrows. Defaults to 12.
+
+    Returns:
+        tuple: A tuple containing two slice objects, one for latitudes and
+               one for longitudes. Each slice object specifies the step size
+               for downsampling the corresponding array. The step size is
+               calculated as the maximum of 1 and the length of the array
+               divided by the density factor.
+    """
     return (
         slice(None, None, max(1, len(latitudes) // density_factor)),
         slice(None, None, max(1, len(longitudes) // density_factor)),
     )
 
 
-def generate_significant_wave_height():
-    # Step 11: Plot Hs geospatially and save to the figures folder
-    send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
-
-    results = []
-
-    current_block_Met_office_final = datetime.now().strftime("%Y%m%d")
-    print(f"Processing Block: {current_block_Met_office_final}")
-
-    block_files = sorted(
-        [
-            os.path.join(send_here_wave_folder, f)
-            for f in os.listdir(send_here_wave_folder)
-            if f.endswith(".nc") and f"b{current_block_Met_office_final}" in f
-        ]
-    )
-
-    if not block_files:
-        print(
-            f"No files found for Block {current_block_Met_office_final}. Falling back to the previous day's block."
-        )
-        current_block_Met_office_final = (
-            datetime.strptime(current_block_Met_office_final, "%Y%m%d")
-            - timedelta(days=1)
-        ).strftime("%Y%m%d")
-        block_files = sorted(
-            [
-                os.path.join(send_here_wave_folder, f)
-                for f in os.listdir(send_here_wave_folder)
-                if f.endswith(".nc") and f"b{current_block_Met_office_final}" in f
-            ]
-        )
-        print(f"Retrying with Block: {current_block_Met_office_final}")
-
-    if block_files:
-        hs_list = []
-        time_list = []
-
-        for file in block_files:
-            ds = xr.open_dataset(file)
-            hs = ds[["VHM0", "VMDR"]]
-            times = ds["time"].values
-            hs_list.append(hs)
-            time_list.extend(times)
-
-        if hs_list:
-            hs_combined_for_Dawlish_study_site = xr.concat(hs_list, dim="time")
-            time_combined = np.array(time_list)
-
-            # Coordinates (Southwest England)
-            lat_bound_Dawlish_Seawall = [49.5, 51.5]
-            lon_bounds_Dawlish_Seawall = [-6.0, -2.0]
-            hs_combined_for_Dawlish_study_site["longitude"] = xr.where(
-                hs_combined_for_Dawlish_study_site["longitude"] > 180,
-                hs_combined_for_Dawlish_study_site["longitude"] - 360,
-                hs_combined_for_Dawlish_study_site["longitude"],
-            )
-            hs_southwest = hs_combined_for_Dawlish_study_site.sel(
-                latitude=slice(
-                    lat_bound_Dawlish_Seawall[0], lat_bound_Dawlish_Seawall[1]
-                ),
-                longitude=slice(
-                    lon_bounds_Dawlish_Seawall[0], lon_bounds_Dawlish_Seawall[1]
-                ),
-            )
-
-            for time_idx, time_value in enumerate(time_combined):
-                if time_idx % 6 == 0:
-                    hs_frame_digital_twin = hs_southwest.sel(time=time_value)
-
-                    time_label = pd.Timestamp(time_value).strftime("%Y-%m-%d %H:%M:%S")
-                    # plt.figure(figsize=(10, 8))
-
-                    z_data = hs_frame_digital_twin["VHM0"].squeeze().values
-                    if z_data.ndim > 2:
-                        z_data = z_data[0]
-
-                    wave_dir_frame = hs_frame_digital_twin["VMDR"]
-                    wave_dir = wave_dir_frame.values
-
-                    longitudes = hs_frame_digital_twin["longitude"].values
-                    latitudes = hs_frame_digital_twin["latitude"].values
-                    lon_grid, lat_grid = np.meshgrid(longitudes, latitudes)
-
-                    U = -np.sin(np.deg2rad(wave_dir))
-                    V = -np.cos(np.deg2rad(wave_dir))
-
-                    land_margin_mask = ~np.isnan(z_data) & (z_data > 0.2)
-                    U = np.where(land_margin_mask, U, np.nan)
-                    V = np.where(land_margin_mask, V, np.nan)
-
-                    skip = adjust_arrow_density(
-                        latitudes, longitudes, density_factor=12
-                    )
-
-                    # Create a dictionary for each record
-                    record = {
-                        "latitudes": latitudes.tolist(),
-                        "longitudes": longitudes.tolist(),
-                        "z_data": z_data.tolist(),
-                        "U": U.tolist(),
-                        "V": V.tolist(),
-                        "lon_grid": lon_grid.tolist(),
-                        "lat_grid": lat_grid.tolist(),
-                        # "skip": int(skip),
-                        "current_block_Met_office_final": current_block_Met_office_final,
-                        "time_label": time_label,
-                    }
-                    results.append(record)
-
-    return results
-
-
 def plot_significant_wave_height():
+    """Plot significant wave height
+    """
+    
     # Step 11: Plot Hs geospatially and save to the figures folder
     send_here_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
     output_folder = os.environ.get("DAWLISH_OUTPUT_WAVES_FOLDER")
@@ -1344,6 +1452,9 @@ def plot_significant_wave_height():
 
 
 def generate_overtopping_graphs():
+    """Generate overtopping graphs
+    """
+    
     global final_DawlishTwin_dataset
     final_DawlishTwin_dataset = get_digital_twin_dataset(datetime.now().date())
     load_models(SPLASH_DIGITAL_TWIN_models_folder)

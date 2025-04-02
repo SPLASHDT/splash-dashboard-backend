@@ -8,6 +8,9 @@ import json
 
 
 def loadConfigFile():
+    """Load environment variables from configuration file
+    """
+
     environment = os.getenv("SPLASH_ENV")
 
     if environment == "local":
@@ -23,6 +26,15 @@ def loadConfigFile():
 
 
 def getLocationDataPaths(option: str):
+    """Get datasets paths
+
+    Args:
+        option (string): Dataset's name
+
+    Returns:
+        Tuple: Absolute paths of wave, wind, Dawlish and Penzance water level folders
+    """
+
     if option == "dawlish" or option == "penzance":
         met_office_wave_folder = os.environ.get("MET_OFFICE_WAVE_FOLDER")
         met_office_wind_folder = os.environ.get("MET_OFFICE_WIND_FOLDER")
@@ -45,6 +57,15 @@ def getLocationDataPaths(option: str):
 
 
 def getNumericValue(input_value):
+    """Get numeric value
+
+    Args:
+        input_value (string): String representing number
+
+    Returns:
+        integer: Numeric value
+    """
+
     return int(input_value) if isinstance(input_value, str) else input_value
 
 
@@ -70,6 +91,21 @@ def get_query_params_values(
     wind_speed_name,
     wind_direction_name,
 ):
+    """Get query parameters values
+
+    Args:
+        start_date_name (string): Parameter's name of forecast start date
+        sig_wave_height_name (_type_): Parameter's name of significant wave height variable
+        freeboard_name (_type_): Parameter's name of freeboard variable
+        mean_wave_period_name (_type_): Parameter's name of mean wave period variable
+        mean_wave_dir_name (_type_): Parameter's name of mean wave direction variable
+        wind_speed_name (_type_): Parameter's name of wind speed variable
+        wind_direction_name (_type_): Parameter's name of wind direction variable
+
+    Returns:
+        Tuple: Values of forecast start date, significant wave height, freeboard, mean wave period, mean wave direction, wind speed and wind direction
+    """
+
     start_date = request.args.get(start_date_name, datetime.now().date())
     date_object = (
         datetime.strptime(start_date, "%d-%m-%Y").date()
@@ -101,6 +137,20 @@ def all_variables_with_initial_values(
     wind_speed,
     wind_direction,
 ):
+    """All variables have zero value
+
+    Args:
+        sig_wave_height (integer): Significant wave height value
+        freeboard (integer): Freeboard value
+        mean_wave_period (integer): Mean wave period value
+        mean_wave_dir (integer): Mean wave direction value
+        wind_speed (integer): Wind speed value
+        wind_direction (integer): Wind direction value
+
+    Returns:
+        bool: Flag is True when all variables have zero value, False otherwise
+    """
+    
     return (
         sig_wave_height == 0
         and freeboard == 0
