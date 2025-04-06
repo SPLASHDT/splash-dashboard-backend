@@ -302,57 +302,32 @@ def extract_water_level_data():
     return water_level.resample("3H").interpolate()
 
 
-def extract_hourly_water_level_data(
-    water_level_df, start_date, end_date, all_variables_with_initial_values
-):
+def extract_hourly_water_level_data(start_date, end_date):
     """Extract hourly water level data
 
     Args:
-        water_level_df (Dataframe): Water level dataframe
-        start_date (string): String representing date
-        end_date (string): String representing date
-        all_variables_with_initial_values (bool): Flag which defines if all variables have zero values
+        start_date (string): String representing start date
+        end_date (string): String representing end date
 
     Returns:
         Dataframe: Interpolated water level dataframe
     """
 
-    if all_variables_with_initial_values:
-        water_level = pd.read_csv(
-            wl_file,
-            sep=r"\s+",
-            header=None,
-            skiprows=2,
-            names=["date", "time", "water_level"],
-            engine="python",
-        )
-        water_level["datetime"] = pd.to_datetime(
-            water_level["date"] + " " + water_level["time"], format="%d/%m/%Y %H:%M"
-        )
-        water_level = water_level.rename(
-            columns={"datetime": "Time", "water_level": "tidal_level"}
-        )
-        water_level = water_level.set_index("Time")[["tidal_level"]]
-    else:
-        water_level = water_level_df.rename(
-            columns={"Freeboard": "tidal_level", "time": "Time"}
-        )
-        water_level = water_level.drop(
-            [
-                "Hs",
-                "RF1_Final_Predictions",
-                "Selected_Model",
-                "Tm",
-                "Wind Direction_dir",
-                "Wind Speed_wind",
-                "Wind(m/s)",
-                "shoreWaveDir",
-                "shoreWindDir",
-                "water_level_wl",
-            ],
-            axis=1,
-        )
-        water_level = water_level.set_index("Time")
+    water_level = pd.read_csv(
+        wl_file,
+        sep=r"\s+",
+        header=None,
+        skiprows=2,
+        names=["date", "time", "water_level"],
+        engine="python",
+    )
+    water_level["datetime"] = pd.to_datetime(
+        water_level["date"] + " " + water_level["time"], format="%d/%m/%Y %H:%M"
+    )
+    water_level = water_level.rename(
+        columns={"datetime": "Time", "water_level": "tidal_level"}
+    )
+    water_level = water_level.set_index("Time")[["tidal_level"]]
 
     water_level = water_level.loc[start_date:end_date]
     return water_level.asfreq("1H").interpolate()
@@ -636,6 +611,22 @@ def adjust_overtopping_features(
     Penzance_adjusted_note["Wind(m/s)"] *= 1 + wind_speed / 100
     Penzance_adjusted_note["shoreWindDir"] = wind_direction
     Penzance_adjusted_note["Freeboard"] *= 1 + freeboard / 100
+    return Penzance_adjusted_note
+
+
+def adjust_freeboard_only(df, freeboard):
+    """Adjust feeboard value only
+
+    Args:
+        df (Dataframe): Initial digital twin dataframe
+        freeboard (_type_): Freeboard value in percentage
+
+    Returns:
+        Dataframe: Dataframe with adjusted features values
+    """
+
+    Penzance_adjusted_note = df.copy()
+    Penzance_adjusted_note["tidal_level"] *= 1 + freeboard / 100
     return Penzance_adjusted_note
 
 

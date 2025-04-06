@@ -279,26 +279,18 @@ def get_dawlish_water_level():
         wind_speed,
         wind_direction,
     )
-
     ddt.load_models(SPLASH_DT_Dawlish_models_folder)
     ddt.process_wave_overtopping(final_DawlishTwin_dataset_adjusted)
 
     ds_start_date = final_DawlishTwin_dataset_adjusted["time"].min()
     ds_end_date = final_DawlishTwin_dataset_adjusted["time"].max()
 
-    all_vars_with_initial_values = utils.all_variables_with_initial_values(
-        sig_wave_height,
-        freeboard,
-        mean_wave_period,
-        mean_wave_dir,
-        wind_speed,
-        wind_direction,
-    )
     interpolated_DawlishTwin_dataset = ddt.extract_water_level_for_range(
-        final_DawlishTwin_dataset_adjusted,
         ds_start_date,
-        ds_end_date,
-        all_vars_with_initial_values,
+        ds_end_date
+    )
+    interpolated_DawlishTwin_dataset = ddt.adjust_freeboard_only(
+        interpolated_DawlishTwin_dataset, freeboard
     )
     overtopping_times_by_feature_df = ddt.get_overtopping_times_data(
         final_DawlishTwin_dataset_adjusted, "Freeboard"
@@ -528,19 +520,13 @@ def get_penzance_tidal_level():
 
     ds_start_date = final_Penzance_Twin_dataset_adjusted["time"].min()
     ds_end_date = final_Penzance_Twin_dataset_adjusted["time"].max()
-    all_vars_with_initial_values = utils.all_variables_with_initial_values(
-        sig_wave_height,
-        freeboard,
-        mean_wave_period,
-        mean_wave_dir,
-        wind_speed,
-        wind_direction,
-    )
+
     interpolated_PenzanceTwin_dataset = pdt.extract_hourly_water_level_data(
-        final_Penzance_Twin_dataset_adjusted,
         ds_start_date,
         ds_end_date,
-        all_vars_with_initial_values,
+    )
+    interpolated_PenzanceTwin_dataset = pdt.adjust_freeboard_only(
+        interpolated_PenzanceTwin_dataset, freeboard
     )
     overtopping_times_by_feature_df = pdt.get_overtopping_times_data(
         final_Penzance_Twin_dataset_adjusted, "Freeboard"
