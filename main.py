@@ -286,8 +286,7 @@ def get_dawlish_water_level():
     ds_end_date = final_DawlishTwin_dataset_adjusted["time"].max()
 
     interpolated_DawlishTwin_dataset = ddt.extract_water_level_for_range(
-        ds_start_date,
-        ds_end_date
+        ds_start_date, ds_end_date
     )
     interpolated_DawlishTwin_dataset = ddt.adjust_freeboard_only(
         interpolated_DawlishTwin_dataset, freeboard

@@ -301,9 +301,7 @@ def extract_water_level_data():
     return water_level.resample("3H").interpolate()
 
 
-def extract_water_level_for_range(
-    start_date, end_date
-):
+def extract_water_level_for_range(start_date, end_date):
     """Extract water level for range
 
     Args:
