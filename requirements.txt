@@ -12,3 +12,4 @@ pygrib==2.1.6
 #ipywidgets>=7.6
 seaborn>=0.13.2
 python-dotenv>=1.0.1
+gunicorn>=23.0.0
