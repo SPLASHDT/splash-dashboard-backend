@@ -9,5 +9,5 @@ conda env create --file=env.yml -n backend
 RUN conda init && conda clean -ya
 
 ENV SPLASH_ENV=docker
-ENTRYPOINT cd /splash-dashboard-backend && conda run -n backend --no-capture-output python main.py
+ENTRYPOINT cd /splash-dashboard-backend && conda run -n backend --no-capture-output gunicorn --config gunicorn-config.py gunicorn-main:app
 EXPOSE 8080
