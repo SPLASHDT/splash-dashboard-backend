@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: © 2025 National Oceanography Centre and University of Plymouth
+
+# SPDX-License-Identifier: MIT
+
 """SPLASH Digital Twin Dawlish"""
 
 # Script for using the different pretrained machine learning models to predict (1) wave overtopping occurrences and (2) overtopping frequency.

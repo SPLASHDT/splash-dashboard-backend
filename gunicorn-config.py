@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: © 2025 National Oceanography Centre and University of Plymouth
+
+# SPDX-License-Identifier: MIT
+
 import os
 
 workers = int(os.environ.get('GUNICORN_PROCESSES', '2'))

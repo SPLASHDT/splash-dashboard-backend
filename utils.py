@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: © 2025 National Oceanography Centre and University of Plymouth
+
+# SPDX-License-Identifier: MIT
+
 import os
 from dotenv import load_dotenv
 import pandas as pd

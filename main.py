@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: © 2025 National Oceanography Centre and University of Plymouth
+
+# SPDX-License-Identifier: MIT
+
 from flask import Flask, jsonify, request
 import dawlish_final_digital_twin_script_upgraded as ddt
 import penzance_final_digital_twin_script_upgraded as pdt
