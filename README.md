@@ -18,9 +18,11 @@ SPLASH digital twin is based on AI models trained using field measurements of wa
 More details about Splash project can be found in the following link: https://www.plymouth.ac.uk/research/coastal-processes/splash-project
 
 # Dashboard Backend
+
 Backend which implements RESTful APIs to support functionalities of Splash dashboard.
 
 # Run backend API on any environment
+
 1. Set a system environment variable temporarily using the following command in you terminal. Make sure you do not close terminal while running the backend API. For example, to run dashboard locally, set SPLASH_ENV environment variable to _**local**_ value. For staging and production environments use _**staging**_ and _**production**_ values.
 
 ```bash
@@ -63,3 +65,6 @@ To check system environment variable value, run the following command:
     % python3 main.py
 ```
 
+# Digital Object Identifier
+
+[![DOI](https://zenodo.org/badge/920796017.svg)](https://doi.org/10.5281/zenodo.15281624)
