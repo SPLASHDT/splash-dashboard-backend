@@ -34,17 +34,52 @@ To check system environment variable value, run the following command:
 % echo $SPLASH_ENV
 ```
 
-2. Create data, data_inputs, models, dawlish and penzance, water_level, wave_level, wind, data_outputs, dawlish, penzance, all_plots, waves folders following the next directory tree structure.
+2. Download synthetic water level, wave and wind datasets from Zenodo platform following this link [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15394753.svg)](https://doi.org/10.5281/zenodo.15394753). Go to **Files** section and click on **Download All** or **Download** button. This action will download a **data.zip** folder.
+
+3. Unzip and copy **data** folder inside root folder. The **data** folder structure must be like this:
 
 ```bash
     |__data
         |__data_inputs
-        |   |__models
-        |   |   |__dawlish
-        |   |   |__penzance
-        |   |__water_level
-        |   |__wave_level
+            |__water
+            |__wave
+            |   |_no_overtopping
+            |   |_storm_bert
+            |__wind
+                |_no_overtopping
+                |_storm_bert
+```
+4. Download Dawlish and Penzance models from the next repository https://github.com/SPLASHDT/splash_models. Copy **DWL_RF_models** and **PNZ_RF_models** folders inside **data_inputs** folder. Rename **DWL_RF_models** to **dawlish_models** and **PNZ_RF_models** to **penzance_models**. The **data** folder structure must look like this:
+
+```bash
+    |__data
+        |__data_inputs
+            |__dawlish_models
+            |__penzance_models
+            |__water
+            |__wave
+            |   |_no_overtopping
+            |   |_storm_bert
+            |__wind
+                |_no_overtopping
+                |_storm_bert
+
+```
+
+5. Create **data_outputs** folder inside **data** folder, add **dawlish** and **penzance** folders inside **data_outputs**. Add **all_plots** and **waves** folders inside **dawlish** and **penzance** folders. The **data** folder estructure must look like this:
+
+```bash
+    |__data
+        |__data_inputs
+        |   |__dawlish_models
+        |   |__penzance_models
+        |   |__water
+        |   |__wave
+        |   |   |_no_overtopping
+        |   |   |_storm_bert
         |   |__wind
+        |        |_no_overtopping
+        |        |_storm_bert
         |__data_outputs
             |__dawlish
             |   |__all_plots
@@ -55,11 +90,7 @@ To check system environment variable value, run the following command:
 
 ```
 
-3. Add Dawlish models files to data/data_inputs/modesl/dawlish and Penzance models files to other-assets/data_inputs/modesl/penzance folder.
-4. Add water level datasets to data/data_inputs/water_level folder.
-5. Add wave level datasets to data/data_inputs/wave_level folder.
-6. Add wind datasets to data/data_inputs/wind folder.
-7. To run backend API, run main.py script using the following command:
+6. To run backend API, run main.py script using the following command:
 
 ```bash
     % python3 main.py
